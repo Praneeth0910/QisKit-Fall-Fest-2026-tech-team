@@ -147,9 +147,29 @@ def run_evaluation(problem_id: str, source_code: str, mode: str = "run") -> Dict
         try:
             with redirect_stdout(stdout_buf), redirect_stderr(stderr_buf):
                 hidden_results = judge.run_hidden_tests(user_module)
-        except Exception as e:
-            # Mask internal error details for hidden suite
-            hidden_results = []
+        except Exception:
+            # Do not treat a hidden-suite crash as a successful submission.
+            return {
+                "success": False,
+                "mode": mode,
+                "score": 0,
+                "max_score": judge.max_score,
+                "passed_tests": sum(1 for r in pub_results if r.passed),
+                "total_tests": len(pub_results) + 1,
+                "execution_time_ms": int((time.perf_counter() - total_start) * 1000),
+                "stdout": stdout_buf.getvalue()[:4000],
+                "stderr": "Hidden test suite execution failed.",
+                "error_message": "Hidden test suite execution failed.",
+                "public_results": [r.to_dict(sanitize_hidden=False) for r in pub_results],
+                "hidden_results": [{
+                    "test_type": "hidden",
+                    "test_number": 1,
+                    "test_name": "Hidden Test #1",
+                    "passed": False,
+                    "execution_time_ms": 0,
+                    "error_message": "Hidden test failed. Check edge cases, conventions, and constraints.",
+                }],
+            }
 
     # 6. Aggregate results
     all_results = pub_results + hidden_results

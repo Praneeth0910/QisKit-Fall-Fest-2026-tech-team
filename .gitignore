@@ -45,4 +45,6 @@ __pycache__/
 *.pyc
 
 # Local scratch & temporary backups
-.tmp/
+.tmp/
+
+qiskit-judge/.venv/

@@ -33,7 +33,9 @@ def verify_token(authorization: Optional[str] = Header(None)):
         return  # Open if no secret configured
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid Bearer token")
-    token = authorization.split(" ")[1]
+    token = authorization.removeprefix("Bearer ").strip()
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing or invalid ******")
     if token != JUDGE_SECRET:
         raise HTTPException(status_code=403, detail="Unauthorized judge secret")
 
