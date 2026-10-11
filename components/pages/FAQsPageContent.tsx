@@ -328,14 +328,14 @@ export default function FAQsPageContent() {
     <div className="w-full flex flex-col min-h-screen bg-[var(--background)] text-[var(--foreground)] selection:bg-[#6C151E] selection:text-[#F5F3F0]">
       
       {/* =========================================================================
-          HERO + KEY HIGHLIGHTS VIEWPORT WRAPPER (100vh MIN-HEIGHT COVERAGE)
+          HERO + KEY HIGHLIGHTS VIEWPORT WRAPPER (FITS IN SINGLE INITIAL FRAME)
           ========================================================================= */}
-      <div className="relative w-full min-h-[calc(100vh-80px)] lg:min-h-[calc(100vh-84px)] flex flex-col justify-between">
+      <div className="relative w-full h-[calc(100dvh-80px)] min-h-[500px] flex flex-col justify-between overflow-hidden">
         {/* SECTION 01: CLEAN EDITORIAL HERO SECTION */}
         <section
           id="hero"
           data-section="top"
-          className="relative w-full flex-1 overflow-hidden bg-gradient-to-b from-[#FAF7F2] via-[#F4E8DC]/30 to-[#FAF7F5] dark:from-[#0B0506] dark:via-[#14080A] dark:to-[#0B0506] border-b border-[rgba(108,21,30,0.15)] dark:border-[rgba(61,20,24,0.6)] transition-colors duration-300 py-6 sm:py-8 lg:py-12 flex items-center"
+          className="relative w-full flex-1 overflow-hidden bg-gradient-to-b from-[#FAF7F2] via-[#F4E8DC]/30 to-[#FAF7F5] dark:from-[#0B0506] dark:via-[#14080A] dark:to-[#0B0506] border-b border-[rgba(108,21,30,0.15)] dark:border-[rgba(61,20,24,0.6)] transition-colors duration-300 py-2 sm:py-3 lg:py-4 flex items-center"
         >
           {/* QUANTUM WAVE FIELD CANVAS */}
           <QuantumWaveField className="opacity-50 dark:opacity-80" />
@@ -347,11 +347,11 @@ export default function FAQsPageContent() {
           </div>
 
           <div className="relative z-10 mx-auto max-w-[1440px] w-full px-4 sm:px-6 lg:px-8 xl:px-12">
-            <div className="max-w-3xl space-y-3.5 sm:space-y-4 pointer-events-auto">
+            <div className="max-w-3xl space-y-2 sm:space-y-2.5 pointer-events-auto">
 
               {/* Main Headline */}
               <motion.h1
-                className="font-serif text-[clamp(2rem,4.5vw,3.8rem)] font-bold leading-[1.02] tracking-[-0.03em] m-0 text-[#A7192A] dark:text-[#F0A2B0]"
+                className="font-serif text-[clamp(2.1rem,4.2vw,3.5rem)] font-bold leading-[1.03] tracking-[-0.03em] m-0 text-[#A7192A] dark:text-[#F0A2B0]"
                 initial="hidden"
                 animate="visible"
                 custom={0.05}
@@ -367,59 +367,109 @@ export default function FAQsPageContent() {
 
               {/* Description Subtext */}
               <motion.p
-                className="font-sans font-normal text-[#4E4441] dark:text-[#C4B9B8] text-sm sm:text-base leading-relaxed max-w-2xl"
+                className="font-sans font-normal text-[#4E4441] dark:text-[#C4B9B8] text-xs sm:text-sm md:text-base leading-relaxed max-w-2xl"
                 initial="hidden"
                 animate="visible"
                 custom={0.15}
                 variants={fadeInUpVariant}
               >
-                Detailed answers on the two-phase schedule, ₹99 course fee, technical challenges, eligibility criteria, and preparation guidelines for Qiskit Fall Fest 2026.
+                Explore General Event Rules, Registration &amp; Venue Details, along with complete Technical Hackathon guidelines across all 5 tracks: Quantum Chemistry, Optimization, Simulation, QML, and Post-Quantum Cryptography.
               </motion.p>
 
-              {/* Key Highlights Domain Cards */}
+              {/* Quick Jump Directory Cards (First Page Card Structure & Sizing) */}
               <motion.div
-                className="pt-1.5 space-y-2.5 max-w-2xl"
+                className="pt-1 space-y-2 max-w-3xl"
                 initial="hidden"
                 animate="visible"
                 custom={0.25}
                 variants={fadeInUpVariant}
               >
                 <div className="font-sans text-xs font-bold uppercase tracking-widest text-[#A7192A] dark:text-[#F0A2B0]">
-                  KEY EVENT HIGHLIGHTS
+                  FAQ DIRECTORY &amp; TRACKS
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
-                  {/* Card 1: Schedule & Dates */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+                  {/* Card 1: General FAQs */}
                   <button
                     type="button"
-                    onClick={() => scrollToQuestion('faq-02')}
-                    className="group relative flex flex-col justify-center p-3.5 sm:p-4 rounded-xl border border-[#6C151E]/20 dark:border-[#3D1418] bg-white/95 dark:bg-[#180C0E] text-left transition-all duration-300 hover:border-[#6C151E] dark:hover:border-[#F0A2B0]/50 shadow-xs hover:shadow-lg hover:-translate-y-0.5 cursor-pointer overflow-hidden backdrop-blur-xl"
+                    onClick={() => handleSectionChange('general')}
+                    className={`group relative flex flex-col justify-center p-3 sm:p-3.5 rounded-xl border text-left transition-all duration-300 shadow-xs hover:shadow-lg hover:-translate-y-0.5 cursor-pointer overflow-hidden backdrop-blur-xl ${
+                      activeSection === 'general'
+                        ? 'border-[#6C151E] bg-[#6C151E] text-white shadow-md'
+                        : 'border-[#6C151E]/20 dark:border-[#3D1418] bg-white/95 dark:bg-[#180C0E] hover:border-[#6C151E] dark:hover:border-[#F0A2B0]/50'
+                    }`}
                   >
-                    {/* Smooth Color Spread Hover Shade */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#6C151E] via-[#8A1522] to-[#A7192A] dark:from-[#3D1418] dark:via-[#6C151E] dark:to-[#A7192A] opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out pointer-events-none" />
-
-                    <div className="relative z-10 font-serif font-bold text-base sm:text-lg text-[#211818] dark:text-white leading-tight group-hover:text-white transition-colors duration-300">
-                      Schedule &amp; Dates
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#6C151E] via-[#8A1522] to-[#A7192A] opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out pointer-events-none" />
+                    <div className="relative z-10 flex items-center justify-between">
+                      <div className={`font-serif font-bold text-sm sm:text-base leading-tight transition-colors duration-300 ${
+                        activeSection === 'general' ? 'text-white' : 'text-[#211818] dark:text-white group-hover:text-white'
+                      }`}>
+                        General FAQs
+                      </div>
+                      <BookOpen size={16} className={`shrink-0 transition-colors duration-300 ${
+                        activeSection === 'general' ? 'text-white/80' : 'text-[#6C151E] dark:text-[#F0A2B0] group-hover:text-white'
+                      }`} />
                     </div>
-                    <div className="relative z-10 text-xs sm:text-sm font-sans font-semibold text-[#6C151E] dark:text-[#F0A2B0] group-hover:text-white dark:group-hover:text-white transition-colors duration-300 mt-0.5">
-                      Oct 8–10 &amp; Oct 26–30
+                    <div className={`relative z-10 text-xs font-sans font-semibold mt-0.5 transition-colors duration-300 ${
+                      activeSection === 'general' ? 'text-white/90' : 'text-[#6C151E] dark:text-[#F0A2B0] group-hover:text-white'
+                    }`}>
+                      18 Questions
                     </div>
                   </button>
 
-                  {/* Card 2: Registration & Fee */}
+                  {/* Card 2: Technical & Hackathon FAQs */}
                   <button
                     type="button"
-                    onClick={() => scrollToQuestion('faq-17')}
-                    className="group relative flex flex-col justify-center p-3.5 sm:p-4 rounded-xl border border-[#6C151E]/20 dark:border-[#3D1418] bg-white/95 dark:bg-[#180C0E] text-left transition-all duration-300 hover:border-[#6C151E] dark:hover:border-[#F0A2B0]/50 shadow-xs hover:shadow-lg hover:-translate-y-0.5 cursor-pointer overflow-hidden backdrop-blur-xl"
+                    onClick={() => handleSectionChange('technical')}
+                    className={`group relative flex flex-col justify-center p-3 sm:p-3.5 rounded-xl border text-left transition-all duration-300 shadow-xs hover:shadow-lg hover:-translate-y-0.5 cursor-pointer overflow-hidden backdrop-blur-xl ${
+                      activeSection === 'technical'
+                        ? 'border-[#6C151E] bg-[#6C151E] text-white shadow-md'
+                        : 'border-[#6C151E]/20 dark:border-[#3D1418] bg-white/95 dark:bg-[#180C0E] hover:border-[#6C151E] dark:hover:border-[#F0A2B0]/50'
+                    }`}
                   >
-                    {/* Smooth Color Spread Hover Shade */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#6C151E] via-[#8A1522] to-[#A7192A] dark:from-[#3D1418] dark:via-[#6C151E] dark:to-[#A7192A] opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out pointer-events-none" />
-
-                    <div className="relative z-10 font-serif font-bold text-base sm:text-lg text-[#211818] dark:text-white leading-tight group-hover:text-white transition-colors duration-300">
-                      Registration &amp; Fee
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#6C151E] via-[#8A1522] to-[#A7192A] opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out pointer-events-none" />
+                    <div className="relative z-10 flex items-center justify-between">
+                      <div className={`font-serif font-bold text-sm sm:text-base leading-tight transition-colors duration-300 ${
+                        activeSection === 'technical' ? 'text-white' : 'text-[#211818] dark:text-white group-hover:text-white'
+                      }`}>
+                        Technical &amp; Hackathon
+                      </div>
+                      <Cpu size={16} className={`shrink-0 transition-colors duration-300 ${
+                        activeSection === 'technical' ? 'text-white/80' : 'text-[#6C151E] dark:text-[#F0A2B0] group-hover:text-white'
+                      }`} />
                     </div>
-                    <div className="relative z-10 text-xs sm:text-sm font-sans font-semibold text-[#6C151E] dark:text-[#F0A2B0] group-hover:text-white dark:group-hover:text-white transition-colors duration-300 mt-0.5">
-                      ₹99 Online Course Fee
+                    <div className={`relative z-10 text-xs font-sans font-semibold mt-0.5 transition-colors duration-300 ${
+                      activeSection === 'technical' ? 'text-white/90' : 'text-[#6C151E] dark:text-[#F0A2B0] group-hover:text-white'
+                    }`}>
+                      84 Questions
+                    </div>
+                  </button>
+
+                  {/* Card 3: All Questions */}
+                  <button
+                    type="button"
+                    onClick={() => handleSectionChange('all')}
+                    className={`group relative flex flex-col justify-center p-3 sm:p-3.5 rounded-xl border text-left transition-all duration-300 shadow-xs hover:shadow-lg hover:-translate-y-0.5 cursor-pointer overflow-hidden backdrop-blur-xl ${
+                      activeSection === 'all'
+                        ? 'border-[#6C151E] bg-[#6C151E] text-white shadow-md'
+                        : 'border-[#6C151E]/20 dark:border-[#3D1418] bg-white/95 dark:bg-[#180C0E] hover:border-[#6C151E] dark:hover:border-[#F0A2B0]/50'
+                    }`}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#6C151E] via-[#8A1522] to-[#A7192A] opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out pointer-events-none" />
+                    <div className="relative z-10 flex items-center justify-between">
+                      <div className={`font-serif font-bold text-sm sm:text-base leading-tight transition-colors duration-300 ${
+                        activeSection === 'all' ? 'text-white' : 'text-[#211818] dark:text-white group-hover:text-white'
+                      }`}>
+                        All Questions
+                      </div>
+                      <Layers size={16} className={`shrink-0 transition-colors duration-300 ${
+                        activeSection === 'all' ? 'text-white/80' : 'text-[#6C151E] dark:text-[#F0A2B0] group-hover:text-white'
+                      }`} />
+                    </div>
+                    <div className={`relative z-10 text-xs font-sans font-semibold mt-0.5 transition-colors duration-300 ${
+                      activeSection === 'all' ? 'text-white/90' : 'text-[#6C151E] dark:text-[#F0A2B0] group-hover:text-white'
+                    }`}>
+                      102 Total Directory
                     </div>
                   </button>
                 </div>
@@ -433,7 +483,7 @@ export default function FAQsPageContent() {
         <section
           id="faq-stats"
           aria-label="FAQ Highlights"
-          className="relative w-full shrink-0 bg-gradient-to-r from-[#500D14] via-[#6C151E] to-[#500D14] dark:from-[#200508] dark:via-[#350A0F] dark:to-[#200508] text-[#FAF7F3] border-y border-[#A7192A]/50 dark:border-[#4A151C] py-5 sm:py-6 shadow-2xl isolate overflow-hidden"
+          className="relative w-full shrink-0 bg-gradient-to-r from-[#500D14] via-[#6C151E] to-[#500D14] dark:from-[#200508] dark:via-[#350A0F] dark:to-[#200508] text-[#FAF7F3] border-y border-[#A7192A]/50 dark:border-[#4A151C] py-2.5 sm:py-3.5 shadow-2xl isolate overflow-hidden"
         >
           {/* Ambient Glow Orbs */}
           <div className="absolute inset-0 pointer-events-none z-0">
@@ -442,57 +492,57 @@ export default function FAQsPageContent() {
           </div>
 
           <div className="relative z-10 w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-5">
               
               {/* Metric 1 */}
-              <div className="group flex flex-col items-start p-4 rounded-2xl bg-white/12 dark:bg-[#1A060A]/85 border border-white/20 dark:border-[#4A151C] hover:border-white/40 dark:hover:border-[#F0A2B0]/50 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 shadow-lg">
+              <div className="group flex flex-col items-start p-3.5 sm:p-4 rounded-2xl bg-white/12 dark:bg-[#1A060A]/85 border border-white/20 dark:border-[#4A151C] hover:border-white/40 dark:hover:border-[#F0A2B0]/50 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 shadow-lg">
                 <span className="font-sans text-xs font-bold tracking-widest uppercase text-[#F5DABF] dark:text-[#F0A2B0] mb-1">
-                  Directory Scope
+                  Total Questions
                 </span>
                 <div className="font-serif text-xl sm:text-2xl font-bold text-white leading-tight group-hover:text-white transition-colors">
-                  All FAQ Topics
+                  102 Verified Items
                 </div>
                 <span className="text-xs font-sans text-[#F0E6E3] dark:text-[#C4B9B8] mt-1">
-                  Complete Festival Guide
+                  18 General • 84 Technical
                 </span>
               </div>
 
               {/* Metric 2 */}
-              <div className="group flex flex-col items-start p-4 rounded-2xl bg-white/12 dark:bg-[#1A060A]/85 border border-white/20 dark:border-[#4A151C] hover:border-white/40 dark:hover:border-[#F0A2B0]/50 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 shadow-lg">
+              <div className="group flex flex-col items-start p-3.5 sm:p-4 rounded-2xl bg-white/12 dark:bg-[#1A060A]/85 border border-white/20 dark:border-[#4A151C] hover:border-white/40 dark:hover:border-[#F0A2B0]/50 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 shadow-lg">
                 <span className="font-sans text-xs font-bold tracking-widest uppercase text-[#F5DABF] dark:text-[#F0A2B0] mb-1">
-                  Event Timeline
+                  Hackathon Tracks
                 </span>
-                <div className="font-serif text-lg sm:text-xl font-bold text-white leading-tight group-hover:text-white transition-colors">
-                  Oct 8–10 &amp; 26–30
+                <div className="font-serif text-xl sm:text-2xl font-bold text-white leading-tight group-hover:text-white transition-colors">
+                  5 Domain Tracks
                 </div>
                 <span className="text-xs font-sans text-[#F0E6E3] dark:text-[#C4B9B8] mt-1">
-                  Two-Phase Hybrid Festival
+                  Chemistry • Opt • Sim • QML • PQC
                 </span>
               </div>
 
               {/* Metric 3 */}
-              <div className="group flex flex-col items-start p-4 rounded-2xl bg-white/12 dark:bg-[#1A060A]/85 border border-white/20 dark:border-[#4A151C] hover:border-white/40 dark:hover:border-[#F0A2B0]/50 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 shadow-lg">
+              <div className="group flex flex-col items-start p-3.5 sm:p-4 rounded-2xl bg-white/12 dark:bg-[#1A060A]/85 border border-white/20 dark:border-[#4A151C] hover:border-white/40 dark:hover:border-[#F0A2B0]/50 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 shadow-lg">
                 <span className="font-sans text-xs font-bold tracking-widest uppercase text-[#F5DABF] dark:text-[#F0A2B0] mb-1">
-                  Online Course
+                  Phase 1 Benchmarks
                 </span>
                 <div className="font-serif text-xl sm:text-2xl font-bold text-white leading-tight group-hover:text-white transition-colors">
-                  ₹99 Fee
+                  Processor A &amp; B
                 </div>
                 <span className="text-xs font-sans text-[#F0E6E3] dark:text-[#C4B9B8] mt-1">
-                  Per Participant Registration
+                  5Q Linear &amp; 9Q Heavy-Hex
                 </span>
               </div>
 
               {/* Metric 4 */}
-              <div className="group flex flex-col items-start p-4 rounded-2xl bg-white/12 dark:bg-[#1A060A]/85 border border-white/20 dark:border-[#4A151C] hover:border-white/40 dark:hover:border-[#F0A2B0]/50 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 shadow-lg">
+              <div className="group flex flex-col items-start p-3.5 sm:p-4 rounded-2xl bg-white/12 dark:bg-[#1A060A]/85 border border-white/20 dark:border-[#4A151C] hover:border-white/40 dark:hover:border-[#F0A2B0]/50 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 shadow-lg">
                 <span className="font-sans text-xs font-bold tracking-widest uppercase text-[#F5DABF] dark:text-[#F0A2B0] mb-1">
-                  Host Institution
+                  Submission Deadline
                 </span>
-                <div className="font-serif text-lg sm:text-xl font-bold text-white leading-tight group-hover:text-white transition-colors">
-                  SRM University-AP
+                <div className="font-serif text-xl sm:text-2xl font-bold text-white leading-tight group-hover:text-white transition-colors">
+                  13 Oct • 11:59 PM
                 </div>
                 <span className="text-xs font-sans text-[#F0E6E3] dark:text-[#C4B9B8] mt-1">
-                  Amaravati, Andhra Pradesh
+                  Phase 1 Online Sprint Finale
                 </span>
               </div>
 
