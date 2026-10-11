@@ -22,7 +22,7 @@ export const FAQ_META = {
 
 export const TECHNICAL_BENCHMARK_NOTICE = {
   title: 'Phase 1 Processor A/B Benchmark & Challenge Advisory',
-  subtitle: 'Compiled strictly from official QFF 2026 challenge documentation',
+  subtitle: 'Official guidelines from the organizing committee',
   details: [
     'Processor A (5 Qubits): Linear graph topology with physical qubits q0–q4 (simulation-derived).',
     'Processor B (9 Qubits): Heavy-hex graph topology with physical qubits q0–q8 (all nine nodes must be utilized).',
@@ -274,7 +274,6 @@ export const GENERAL_FAQS: FAQItem[] = [
 
 // =============================================================================
 // TECHNICAL & HACKATHON FAQS (84 Items)
-// Compiled strictly from official QFF 2026 Challenge Documentation
 // =============================================================================
 export const TECHNICAL_FAQS: FAQItem[] = [
   // --- 1. General Rules & Phase 1 ---

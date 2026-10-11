@@ -372,10 +372,10 @@ export default function FAQsPageContent() {
                 variants={fadeInUpVariant}
               >
                 <span className="block">
-                  <StaggeredTextReveal text="Participant FAQ &" delay={0.05} stagger={0.02} letterClassName="text-[#A7192A] dark:text-[#F0A2B0]" />
+                  <StaggeredTextReveal text="Frequently Asked" delay={0.05} stagger={0.02} letterClassName="text-[#A7192A] dark:text-[#F0A2B0]" />
                 </span>
                 <span className="block mt-0.5 sm:mt-1">
-                  <StaggeredTextReveal text="Challenge Dossier." delay={0.2} stagger={0.025} letterClassName="font-serif italic font-semibold text-[#6C151E] dark:text-white" />
+                  <StaggeredTextReveal text="Questions." delay={0.2} stagger={0.025} letterClassName="font-serif italic font-semibold text-[#6C151E] dark:text-white" />
                 </span>
               </motion.h1>
 
@@ -387,7 +387,7 @@ export default function FAQsPageContent() {
                 custom={0.15}
                 variants={fadeInUpVariant}
               >
-                Compiled strictly from official QFF 2026 challenge documentation. Explore General Event Rules, Registration &amp; Venue Details, along with complete Technical Hackathon guidelines across all 5 tracks: Quantum Chemistry, Optimization, Simulation, QML, and Post-Quantum Cryptography.
+                Explore General Event Rules, Registration &amp; Venue Details, along with complete Technical Hackathon guidelines across all 5 tracks: Quantum Chemistry, Optimization, Simulation, QML, and Post-Quantum Cryptography.
               </motion.p>
 
               {/* Quick Jump Domain Buttons */}
