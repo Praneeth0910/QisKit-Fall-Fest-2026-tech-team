@@ -328,14 +328,14 @@ export default function FAQsPageContent() {
     <div className="w-full flex flex-col min-h-screen bg-[var(--background)] text-[var(--foreground)] selection:bg-[#6C151E] selection:text-[#F5F3F0]">
       
       {/* =========================================================================
-          HERO + KEY HIGHLIGHTS VIEWPORT WRAPPER
+          HERO + KEY HIGHLIGHTS VIEWPORT WRAPPER (FITS IN SINGLE INITIAL FRAME)
           ========================================================================= */}
-      <div className="relative w-full min-h-[calc(100vh-80px)] lg:min-h-[calc(100vh-84px)] flex flex-col justify-between">
+      <div className="relative w-full h-[calc(100dvh-72px)] sm:h-[calc(100dvh-80px)] min-h-[480px] max-h-[720px] flex flex-col justify-between overflow-hidden">
         {/* SECTION 01: EDITORIAL HERO SECTION */}
         <section
           id="hero"
           data-section="top"
-          className="relative w-full flex-1 overflow-hidden bg-gradient-to-b from-[#FAF7F2] via-[#F4E8DC]/30 to-[#FAF7F5] dark:from-[#0B0506] dark:via-[#14080A] dark:to-[#0B0506] border-b border-[rgba(108,21,30,0.15)] dark:border-[rgba(61,20,24,0.6)] transition-colors duration-300 py-8 sm:py-12 lg:py-16 flex items-center"
+          className="relative w-full flex-1 overflow-hidden bg-gradient-to-b from-[#FAF7F2] via-[#F4E8DC]/30 to-[#FAF7F5] dark:from-[#0B0506] dark:via-[#14080A] dark:to-[#0B0506] border-b border-[rgba(108,21,30,0.15)] dark:border-[rgba(61,20,24,0.6)] transition-colors duration-300 py-3 sm:py-5 lg:py-6 flex items-center"
         >
           {/* QUANTUM WAVE FIELD CANVAS */}
           <QuantumWaveField className="opacity-50 dark:opacity-80" />
@@ -347,25 +347,11 @@ export default function FAQsPageContent() {
           </div>
 
           <div className="relative z-10 mx-auto max-w-[1440px] w-full px-4 sm:px-6 lg:px-8 xl:px-12">
-            <div className="max-w-4xl space-y-4 sm:space-y-5 pointer-events-auto">
-              
-              {/* Category Pill Tag */}
-              <motion.div
-                initial="hidden"
-                animate="visible"
-                custom={0.02}
-                variants={fadeInUpVariant}
-                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#6C151E]/20 dark:border-[#3D1418] bg-white/80 dark:bg-[#1A0A0D]/80 backdrop-blur-md shadow-xs"
-              >
-                <Sparkles size={14} className="text-[#6C151E] dark:text-[#F0A2B0]" />
-                <span className="text-xs font-sans font-bold uppercase tracking-widest text-[#6C151E] dark:text-[#F0A2B0]">
-                  Official Participant Knowledge Base • 100+ Source-Grounded FAQs
-                </span>
-              </motion.div>
+            <div className="max-w-4xl space-y-2.5 sm:space-y-3.5 pointer-events-auto">
 
               {/* Main Headline */}
               <motion.h1
-                className="font-serif text-[clamp(2.2rem,5vw,4.2rem)] font-bold leading-[1.02] tracking-[-0.03em] m-0 text-[#A7192A] dark:text-[#F0A2B0]"
+                className="font-serif text-[clamp(1.75rem,3.4vw,2.85rem)] font-bold leading-[1.08] tracking-[-0.03em] m-0 text-[#A7192A] dark:text-[#F0A2B0]"
                 initial="hidden"
                 animate="visible"
                 custom={0.05}
@@ -374,14 +360,14 @@ export default function FAQsPageContent() {
                 <span className="block">
                   <StaggeredTextReveal text="Frequently Asked" delay={0.05} stagger={0.02} letterClassName="text-[#A7192A] dark:text-[#F0A2B0]" />
                 </span>
-                <span className="block mt-0.5 sm:mt-1">
+                <span className="block mt-0.5">
                   <StaggeredTextReveal text="Questions." delay={0.2} stagger={0.025} letterClassName="font-serif italic font-semibold text-[#6C151E] dark:text-white" />
                 </span>
               </motion.h1>
 
               {/* Description Subtext */}
               <motion.p
-                className="font-sans font-normal text-[#4E4441] dark:text-[#C4B9B8] text-sm sm:text-base md:text-lg leading-relaxed max-w-3xl"
+                className="font-sans font-normal text-[#4E4441] dark:text-[#C4B9B8] text-xs sm:text-sm md:text-base leading-relaxed max-w-2xl"
                 initial="hidden"
                 animate="visible"
                 custom={0.15}
@@ -392,7 +378,7 @@ export default function FAQsPageContent() {
 
               {/* Quick Jump Domain Buttons */}
               <motion.div
-                className="pt-2 flex flex-wrap items-center gap-2.5 sm:gap-3"
+                className="pt-1 flex flex-wrap items-center gap-2 sm:gap-2.5"
                 initial="hidden"
                 animate="visible"
                 custom={0.25}
@@ -401,39 +387,39 @@ export default function FAQsPageContent() {
                 <button
                   type="button"
                   onClick={() => handleSectionChange('general')}
-                  className={`inline-flex items-center gap-2 px-4 py-2 sm:py-2.5 rounded-xl font-sans text-xs sm:text-sm font-bold transition-all duration-300 shadow-xs cursor-pointer ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl font-sans text-xs sm:text-sm font-bold transition-all duration-300 shadow-xs cursor-pointer ${
                     activeSection === 'general'
                       ? 'bg-[#6C151E] text-white shadow-md'
                       : 'bg-white/90 dark:bg-[#180C0E] text-[#3A0B10] dark:text-[#F0A2B0] border border-[#6C151E]/20 dark:border-[#3D1418] hover:border-[#6C151E]'
                   }`}
                 >
-                  <BookOpen size={16} />
+                  <BookOpen size={15} />
                   <span>General FAQs ({GENERAL_FAQS.length})</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleSectionChange('technical')}
-                  className={`inline-flex items-center gap-2 px-4 py-2 sm:py-2.5 rounded-xl font-sans text-xs sm:text-sm font-bold transition-all duration-300 shadow-xs cursor-pointer ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl font-sans text-xs sm:text-sm font-bold transition-all duration-300 shadow-xs cursor-pointer ${
                     activeSection === 'technical'
                       ? 'bg-[#6C151E] text-white shadow-md'
                       : 'bg-white/90 dark:bg-[#180C0E] text-[#3A0B10] dark:text-[#F0A2B0] border border-[#6C151E]/20 dark:border-[#3D1418] hover:border-[#6C151E]'
                   }`}
                 >
-                  <Cpu size={16} />
+                  <Cpu size={15} />
                   <span>Technical &amp; Hackathon FAQs ({TECHNICAL_FAQS.length})</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleSectionChange('all')}
-                  className={`inline-flex items-center gap-2 px-4 py-2 sm:py-2.5 rounded-xl font-sans text-xs sm:text-sm font-bold transition-all duration-300 shadow-xs cursor-pointer ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl font-sans text-xs sm:text-sm font-bold transition-all duration-300 shadow-xs cursor-pointer ${
                     activeSection === 'all'
                       ? 'bg-[#6C151E] text-white shadow-md'
                       : 'bg-white/90 dark:bg-[#180C0E] text-[#3A0B10] dark:text-[#F0A2B0] border border-[#6C151E]/20 dark:border-[#3D1418] hover:border-[#6C151E]'
                   }`}
                 >
-                  <Layers size={16} />
+                  <Layers size={15} />
                   <span>All Questions ({FAQS_DATA.length})</span>
                 </button>
               </motion.div>
@@ -446,7 +432,7 @@ export default function FAQsPageContent() {
         <section
           id="faq-stats"
           aria-label="FAQ Highlights"
-          className="relative w-full shrink-0 bg-gradient-to-r from-[#500D14] via-[#6C151E] to-[#500D14] dark:from-[#200508] dark:via-[#350A0F] dark:to-[#200508] text-[#FAF7F3] border-y border-[#A7192A]/50 dark:border-[#4A151C] py-5 sm:py-6 shadow-2xl isolate overflow-hidden"
+          className="relative w-full shrink-0 bg-gradient-to-r from-[#500D14] via-[#6C151E] to-[#500D14] dark:from-[#200508] dark:via-[#350A0F] dark:to-[#200508] text-[#FAF7F3] border-y border-[#A7192A]/50 dark:border-[#4A151C] py-2.5 sm:py-3.5 shadow-2xl isolate overflow-hidden"
         >
           {/* Ambient Glow Orbs */}
           <div className="absolute inset-0 pointer-events-none z-0">
@@ -455,56 +441,56 @@ export default function FAQsPageContent() {
           </div>
 
           <div className="relative z-10 w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 lg:gap-4">
               
               {/* Metric 1 */}
-              <div className="group flex flex-col items-start p-4 rounded-2xl bg-white/12 dark:bg-[#1A060A]/85 border border-white/20 dark:border-[#4A151C] hover:border-white/40 dark:hover:border-[#F0A2B0]/50 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 shadow-lg">
-                <span className="font-sans text-xs font-bold tracking-widest uppercase text-[#F5DABF] dark:text-[#F0A2B0] mb-1">
+              <div className="group flex flex-col items-start p-2.5 sm:p-3 rounded-xl bg-white/12 dark:bg-[#1A060A]/85 border border-white/20 dark:border-[#4A151C] hover:border-white/40 dark:hover:border-[#F0A2B0]/50 backdrop-blur-xl transition-all duration-300 shadow-md">
+                <span className="font-sans text-[10px] sm:text-xs font-bold tracking-wider uppercase text-[#F5DABF] dark:text-[#F0A2B0] mb-0.5">
                   Total Questions
                 </span>
-                <div className="font-serif text-xl sm:text-2xl font-bold text-white leading-tight">
+                <div className="font-serif text-base sm:text-lg lg:text-xl font-bold text-white leading-tight">
                   102 Verified Items
                 </div>
-                <span className="text-xs font-sans text-[#F0E6E3] dark:text-[#C4B9B8] mt-1">
+                <span className="text-[11px] sm:text-xs font-sans text-[#F0E6E3] dark:text-[#C4B9B8] mt-0.5">
                   18 General • 84 Technical
                 </span>
               </div>
 
               {/* Metric 2 */}
-              <div className="group flex flex-col items-start p-4 rounded-2xl bg-white/12 dark:bg-[#1A060A]/85 border border-white/20 dark:border-[#4A151C] hover:border-white/40 dark:hover:border-[#F0A2B0]/50 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 shadow-lg">
-                <span className="font-sans text-xs font-bold tracking-widest uppercase text-[#F5DABF] dark:text-[#F0A2B0] mb-1">
+              <div className="group flex flex-col items-start p-2.5 sm:p-3 rounded-xl bg-white/12 dark:bg-[#1A060A]/85 border border-white/20 dark:border-[#4A151C] hover:border-white/40 dark:hover:border-[#F0A2B0]/50 backdrop-blur-xl transition-all duration-300 shadow-md">
+                <span className="font-sans text-[10px] sm:text-xs font-bold tracking-wider uppercase text-[#F5DABF] dark:text-[#F0A2B0] mb-0.5">
                   Hackathon Tracks
                 </span>
-                <div className="font-serif text-lg sm:text-xl font-bold text-white leading-tight">
+                <div className="font-serif text-base sm:text-lg lg:text-xl font-bold text-white leading-tight">
                   5 Domain Tracks
                 </div>
-                <span className="text-xs font-sans text-[#F0E6E3] dark:text-[#C4B9B8] mt-1">
+                <span className="text-[11px] sm:text-xs font-sans text-[#F0E6E3] dark:text-[#C4B9B8] mt-0.5">
                   Chemistry • Opt • Sim • QML • PQC
                 </span>
               </div>
 
               {/* Metric 3 */}
-              <div className="group flex flex-col items-start p-4 rounded-2xl bg-white/12 dark:bg-[#1A060A]/85 border border-white/20 dark:border-[#4A151C] hover:border-white/40 dark:hover:border-[#F0A2B0]/50 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 shadow-lg">
-                <span className="font-sans text-xs font-bold tracking-widest uppercase text-[#F5DABF] dark:text-[#F0A2B0] mb-1">
+              <div className="group flex flex-col items-start p-2.5 sm:p-3 rounded-xl bg-white/12 dark:bg-[#1A060A]/85 border border-white/20 dark:border-[#4A151C] hover:border-white/40 dark:hover:border-[#F0A2B0]/50 backdrop-blur-xl transition-all duration-300 shadow-md">
+                <span className="font-sans text-[10px] sm:text-xs font-bold tracking-wider uppercase text-[#F5DABF] dark:text-[#F0A2B0] mb-0.5">
                   Phase 1 Benchmarks
                 </span>
-                <div className="font-serif text-xl sm:text-2xl font-bold text-white leading-tight">
+                <div className="font-serif text-base sm:text-lg lg:text-xl font-bold text-white leading-tight">
                   Processor A &amp; B
                 </div>
-                <span className="text-xs font-sans text-[#F0E6E3] dark:text-[#C4B9B8] mt-1">
+                <span className="text-[11px] sm:text-xs font-sans text-[#F0E6E3] dark:text-[#C4B9B8] mt-0.5">
                   5Q Linear &amp; 9Q Heavy-Hex
                 </span>
               </div>
 
               {/* Metric 4 */}
-              <div className="group flex flex-col items-start p-4 rounded-2xl bg-white/12 dark:bg-[#1A060A]/85 border border-white/20 dark:border-[#4A151C] hover:border-white/40 dark:hover:border-[#F0A2B0]/50 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 shadow-lg">
-                <span className="font-sans text-xs font-bold tracking-widest uppercase text-[#F5DABF] dark:text-[#F0A2B0] mb-1">
+              <div className="group flex flex-col items-start p-2.5 sm:p-3 rounded-xl bg-white/12 dark:bg-[#1A060A]/85 border border-white/20 dark:border-[#4A151C] hover:border-white/40 dark:hover:border-[#F0A2B0]/50 backdrop-blur-xl transition-all duration-300 shadow-md">
+                <span className="font-sans text-[10px] sm:text-xs font-bold tracking-wider uppercase text-[#F5DABF] dark:text-[#F0A2B0] mb-0.5">
                   Submission Deadline
                 </span>
-                <div className="font-serif text-lg sm:text-xl font-bold text-white leading-tight">
+                <div className="font-serif text-base sm:text-lg lg:text-xl font-bold text-white leading-tight">
                   13 Oct • 11:59 PM
                 </div>
-                <span className="text-xs font-sans text-[#F0E6E3] dark:text-[#C4B9B8] mt-1">
+                <span className="text-[11px] sm:text-xs font-sans text-[#F0E6E3] dark:text-[#C4B9B8] mt-0.5">
                   Phase 1 Online Sprint Finale
                 </span>
               </div>
