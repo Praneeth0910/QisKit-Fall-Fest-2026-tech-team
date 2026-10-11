@@ -653,6 +653,15 @@ export function AdminCompetitionsView() {
                       </span>
                     );
 
+                  const isDrive = (sub.submission_url || '').toLowerCase().includes('drive.google');
+                  const isInstagram = (sub.submission_url || '').toLowerCase().includes('instagram.com');
+                  const isLinkedIn =
+                    (sub.submission_url || '').toLowerCase().includes('linkedin.com') ||
+                    (sub.submission_url || '').toLowerCase().includes('lnkd.in');
+                  const isYouTube =
+                    (sub.submission_url || '').toLowerCase().includes('youtube.com') ||
+                    (sub.submission_url || '').toLowerCase().includes('youtu.be');
+
                   const formatBadge =
                     sub.documentType === 'pdf' ? (
                       <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800 flex items-center gap-1 w-fit">
@@ -663,6 +672,26 @@ export function AdminCompetitionsView() {
                       <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800 flex items-center gap-1 w-fit">
                         <FileText className="w-3 h-3" />
                         Word (DOCX)
+                      </span>
+                    ) : sub.competition_type === 'reels' && isDrive ? (
+                      <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 flex items-center gap-1 w-fit">
+                        <AlertCircle className="w-3 h-3" />
+                        Drive Link (Needs Social URL)
+                      </span>
+                    ) : sub.competition_type === 'reels' && isInstagram ? (
+                      <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-pink-50 text-pink-700 border border-pink-200 dark:bg-pink-950/40 dark:text-pink-300 dark:border-pink-800 flex items-center gap-1 w-fit">
+                        <ExternalLink className="w-3 h-3" />
+                        Instagram Reel
+                      </span>
+                    ) : sub.competition_type === 'reels' && isLinkedIn ? (
+                      <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800 flex items-center gap-1 w-fit">
+                        <ExternalLink className="w-3 h-3" />
+                        LinkedIn Video
+                      </span>
+                    ) : sub.competition_type === 'reels' && isYouTube ? (
+                      <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-red-50 text-red-700 border border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800 flex items-center gap-1 w-fit">
+                        <ExternalLink className="w-3 h-3" />
+                        YouTube Short
                       </span>
                     ) : (
                       <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 flex items-center gap-1 w-fit">
