@@ -335,7 +335,7 @@ export default function FAQsPageContent() {
         <section
           id="hero"
           data-section="top"
-          className="relative w-full flex-1 overflow-hidden bg-gradient-to-b from-[#FAF7F2] via-[#F4E8DC]/30 to-[#FAF7F5] dark:from-[#0B0506] dark:via-[#14080A] dark:to-[#0B0506] border-b border-[rgba(108,21,30,0.15)] dark:border-[rgba(61,20,24,0.6)] transition-colors duration-300 py-3 sm:py-5 lg:py-6 flex items-center"
+          className="relative w-full flex-1 overflow-hidden bg-gradient-to-b from-[#FAF7F2] via-[#F4E8DC]/30 to-[#FAF7F5] dark:from-[#0B0506] dark:via-[#14080A] dark:to-[#0B0506] border-b border-[rgba(108,21,30,0.15)] dark:border-[rgba(61,20,24,0.6)] transition-colors duration-300 py-2 sm:py-3 lg:py-4 flex items-center"
         >
           {/* QUANTUM WAVE FIELD CANVAS */}
           <QuantumWaveField className="opacity-50 dark:opacity-80" />
@@ -347,11 +347,11 @@ export default function FAQsPageContent() {
           </div>
 
           <div className="relative z-10 mx-auto max-w-[1440px] w-full px-4 sm:px-6 lg:px-8 xl:px-12">
-            <div className="max-w-4xl space-y-2.5 sm:space-y-3.5 pointer-events-auto">
+            <div className="max-w-4xl space-y-2 sm:space-y-3 pointer-events-auto">
 
               {/* Main Headline */}
               <motion.h1
-                className="font-serif text-[clamp(1.75rem,3.4vw,2.85rem)] font-bold leading-[1.08] tracking-[-0.03em] m-0 text-[#A7192A] dark:text-[#F0A2B0]"
+                className="font-serif text-[clamp(2.35rem,4.4vw,3.75rem)] font-bold leading-[1.03] tracking-[-0.035em] m-0 text-[#A7192A] dark:text-[#F0A2B0]"
                 initial="hidden"
                 animate="visible"
                 custom={0.05}
