@@ -708,6 +708,114 @@ function LearningDashboardContent() {
               </div>
             )}
 
+            {/* Digital Poster Dedicated Brand Kit & Anti-AI Policy */}
+            {challenge.type === 'poster' && (
+              <div className="space-y-4">
+                {/* Strict AI Prohibition & Plagiarism Alert */}
+                <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-xs space-y-1.5 shadow-2xs">
+                  <div className="flex items-center gap-2 font-bold text-rose-900 dark:text-rose-200">
+                    <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                    <span>Strict Policy: Generative AI Prohibited & Plagiarism Checked</span>
+                  </div>
+                  <p className="text-rose-800 dark:text-rose-300 leading-relaxed pl-6">
+                    Posters generated using artificial intelligence (e.g., Midjourney, DALL-E, Canva Magic Media, or automated generators) are strictly prohibited. Visual layouts, diagrams, and content are screened for plagiarism. Only authentic, original participant work is eligible for awards.
+                  </p>
+                </div>
+
+                {/* Mandatory Brand Assets Download Card */}
+                <div className="p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-[#3D1418] bg-slate-50/70 dark:bg-[#1A090C] space-y-3.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 dark:border-[#3D1418] pb-3">
+                    <div>
+                      <h3 className="font-sans text-xs sm:text-sm font-bold text-slate-900 dark:text-[#FAF6F3]">
+                        Official Brand Assets & Logos (Mandatory)
+                      </h3>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        Download both high-resolution logos and include them in your digital poster layout (header, footer, or corner).
+                      </p>
+                    </div>
+                    <span className="font-mono text-[10px] font-semibold text-burgundy dark:text-[#E89BA5] px-2.5 py-1 rounded bg-burgundy/10 dark:bg-burgundy/20 border border-burgundy/20 dark:border-burgundy/40 shrink-0 self-start sm:self-auto">
+                      Required for Evaluation
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
+                    {/* Logo 1: Qiskit Fall Fest 2026 SRM AP Badge */}
+                    <div className="p-3 rounded-lg border border-slate-200 dark:border-[#3D1418] bg-white dark:bg-[#150709] flex items-center justify-between gap-3 shadow-2xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-12 h-12 rounded-lg bg-slate-100 dark:bg-[#280C10] p-1 flex items-center justify-center shrink-0 border border-slate-200/80 dark:border-[#3D1418]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src="/brand/qiskit-fall-fest-2026-badge.png"
+                            alt="Qiskit Fall Fest 2026 SRM AP Badge"
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                            Qiskit Fall Fest Badge
+                          </p>
+                          <p className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
+                            PNG · High-Res 1080p
+                          </p>
+                        </div>
+                      </div>
+                      <a
+                        href="/brand/qiskit-fall-fest-2026-badge.png"
+                        download="Qiskit-Fall-Fest-2026-SRMAP-Badge.png"
+                        className="px-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-[#2A0F13] hover:bg-burgundy hover:text-white dark:hover:bg-burgundy text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download</span>
+                      </a>
+                    </div>
+
+                    {/* Logo 2: SRM University-AP Official Logo */}
+                    <div className="p-3 rounded-lg border border-slate-200 dark:border-[#3D1418] bg-white dark:bg-[#150709] flex items-center justify-between gap-3 shadow-2xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-12 h-12 rounded-lg bg-slate-100 dark:bg-[#280C10] p-1 flex items-center justify-center shrink-0 border border-slate-200/80 dark:border-[#3D1418]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src="/brand/srm-ap-logo.png"
+                            alt="SRM University-AP Logo"
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                            SRM University-AP Logo
+                          </p>
+                          <p className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
+                            PNG · Transparent
+                          </p>
+                        </div>
+                      </div>
+                      <a
+                        href="/brand/srm-ap-logo.png"
+                        download="SRM-University-AP-Official-Logo.png"
+                        className="px-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-[#2A0F13] hover:bg-burgundy hover:text-white dark:hover:bg-burgundy text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Essay Competition Dedicated Anti-AI & Plagiarism Warning */}
+            {challenge.type === 'essay' && (
+              <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-xs space-y-1.5 shadow-2xs">
+                <div className="flex items-center gap-2 font-bold text-rose-900 dark:text-rose-200">
+                  <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                  <span>Strict Policy: AI-Generated Content Prohibited (Automated Plagiarism Screening Active)</span>
+                </div>
+                <p className="text-rose-800 dark:text-rose-300 leading-relaxed pl-6">
+                  Essays must be 100% human-authored by the registered participant. The use of generative AI tools (ChatGPT, Claude, Gemini, etc.) or uncredited copied text is strictly prohibited. Every submission is analyzed via automated AI-detection engines and academic plagiarism scanners. Flagged submissions will be disqualified immediately.
+                </p>
+              </div>
+            )}
+
             <form onSubmit={(e) => handleCompetitionSubmit(e, challenge.type)} className="space-y-3">
               {supportsDocUpload && activeMode === 'file' ? (
                 <div className="space-y-3">
