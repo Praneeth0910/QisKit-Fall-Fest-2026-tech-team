@@ -23,11 +23,35 @@ import {
   Minimize2,
   Cpu,
   Terminal,
+  Layers,
+  Sparkles,
+  BookOpen,
+  FileCode,
+  Award,
+  Clock,
+  ShieldCheck,
+  Binary,
+  Atom,
+  TrendingUp,
+  Network,
+  Brain,
+  KeyRound,
+  AlertTriangle,
 } from 'lucide-react';
 import { QuantumWaveField } from '@/components/ui/QuantumWaveField';
 import { Footer } from '@/components/shared/Footer';
 import { StaggeredTextReveal } from '@/components/ui/StaggeredTextReveal';
-import { FAQS_DATA, FAQ_META } from '@/data/faqs';
+import {
+  FAQS_DATA,
+  GENERAL_FAQS,
+  TECHNICAL_FAQS,
+  GENERAL_CATEGORIES,
+  TECHNICAL_CATEGORIES,
+  FAQ_META,
+  TECHNICAL_BENCHMARK_NOTICE,
+  FAQItem,
+  FAQSection,
+} from '@/data/faqs';
 import { REGISTRATION_URL } from '@/lib/constants';
 
 const fadeInUpVariant = {
@@ -47,13 +71,21 @@ export default function FAQsPageContent() {
   const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
+  // High-level section switcher: 'all' | 'general' | 'technical'
+  const [activeSection, setActiveSection] = useState<'all' | 'general' | 'technical'>('all');
+
+  // Category filter state
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Accordion open states (Default first 2 open)
+  // Accordion open states (Default first 2 general & first 2 technical open)
   const [openItems, setOpenItems] = useState<Record<string, boolean>>({
     'faq-01': true,
     'faq-02': true,
+    'tech-01': true,
+    'tech-04': true,
   });
 
   // Copied link toast state
@@ -63,7 +95,7 @@ export default function FAQsPageContent() {
     setMounted(true);
   }, []);
 
-  // Support direct anchor linking on page mount or hash change (#faq-01..#faq-15)
+  // Support direct anchor linking on page mount or hash change (#faq-01..#faq-18, #tech-01..#tech-84)
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -71,10 +103,18 @@ export default function FAQsPageContent() {
       const hash = window.location.hash.replace('#', '');
       if (!hash) return;
 
-      const targetId = hash.startsWith('faq-') ? hash : `faq-${hash.padStart(2, '0')}`;
+      const targetId = hash.startsWith('faq-') || hash.startsWith('tech-')
+        ? hash
+        : `faq-${hash.padStart(2, '0')}`;
+
       const found = FAQS_DATA.find((item) => item.id === targetId || `faq-${item.number}` === hash);
 
       if (found) {
+        if (found.section === 'general' && activeSection === 'technical') {
+          setActiveSection('all');
+        } else if (found.section === 'technical' && activeSection === 'general') {
+          setActiveSection('all');
+        }
         setOpenItems((prev) => ({ ...prev, [found.id]: true }));
         setTimeout(() => {
           const el = document.getElementById(found.id);
@@ -88,22 +128,78 @@ export default function FAQsPageContent() {
     handleHash();
     window.addEventListener('hashchange', handleHash);
     return () => window.removeEventListener('hashchange', handleHash);
-  }, []);
+  }, [activeSection]);
 
-  // Filter FAQs based only on Search Query
+  // Handle section switch and reset category filter
+  const handleSectionChange = (section: 'all' | 'general' | 'technical') => {
+    setActiveSection(section);
+    setSelectedCategory('All');
+  };
+
+  // Compute available categories for the active section
+  const availableCategories = useMemo(() => {
+    if (activeSection === 'general') return GENERAL_CATEGORIES;
+    if (activeSection === 'technical') return TECHNICAL_CATEGORIES;
+    return ['All', ...GENERAL_CATEGORIES.filter((c) => c !== 'All'), ...TECHNICAL_CATEGORIES.filter((c) => c !== 'All')];
+  }, [activeSection]);
+
+  // Filter FAQs based on active section, category, and search query
   const filteredFaqs = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return FAQS_DATA;
 
     return FAQS_DATA.filter((item) => {
+      // 1. Section filtering
+      if (activeSection !== 'all' && item.section !== activeSection) {
+        return false;
+      }
+
+      // 2. Category filtering
+      if (selectedCategory !== 'All' && item.category !== selectedCategory) {
+        return false;
+      }
+
+      // 3. Search query filtering
+      if (!q) return true;
+
+      const matchesQuestion = item.question.toLowerCase().includes(q);
+      const matchesAnswer = item.answer.toLowerCase().includes(q);
+      const matchesCategory = item.category.toLowerCase().includes(q);
+      const matchesId = item.id.toLowerCase().includes(q);
+      const matchesNumber = `${item.number}` === q || `q${item.number}`.includes(q);
+      const matchesTrack = item.trackCode ? item.trackCode.toLowerCase().includes(q) : false;
+      const matchesTags = item.tags ? item.tags.some((t) => t.toLowerCase().includes(q)) : false;
+
       return (
-        item.question.toLowerCase().includes(q) ||
-        item.answer.toLowerCase().includes(q) ||
-        item.category.toLowerCase().includes(q) ||
-        `q${item.number}`.includes(q) ||
-        `${item.number}` === q
+        matchesQuestion ||
+        matchesAnswer ||
+        matchesCategory ||
+        matchesId ||
+        matchesNumber ||
+        matchesTrack ||
+        matchesTags
       );
     });
+  }, [activeSection, selectedCategory, searchQuery]);
+
+  // Compute cross-section search hits when searching
+  const otherSectionHits = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return { general: 0, technical: 0 };
+
+    const genCount = GENERAL_FAQS.filter((item) =>
+      item.question.toLowerCase().includes(q) ||
+      item.answer.toLowerCase().includes(q) ||
+      item.category.toLowerCase().includes(q)
+    ).length;
+
+    const techCount = TECHNICAL_FAQS.filter((item) =>
+      item.question.toLowerCase().includes(q) ||
+      item.answer.toLowerCase().includes(q) ||
+      item.category.toLowerCase().includes(q) ||
+      (item.trackCode && item.trackCode.toLowerCase().includes(q))
+    ).length;
+
+    return { general: genCount, technical: techCount };
   }, [searchQuery]);
 
   // Toggle single FAQ accordion
@@ -114,7 +210,7 @@ export default function FAQsPageContent() {
     }));
   }, []);
 
-  // Expand / Collapse all filtered FAQs
+  // Expand / Collapse all currently filtered FAQs
   const areAllExpanded = useMemo(() => {
     if (filteredFaqs.length === 0) return false;
     return filteredFaqs.every((item) => !!openItems[item.id]);
@@ -133,7 +229,7 @@ export default function FAQsPageContent() {
   }, [areAllExpanded, filteredFaqs]);
 
   // Copy Question & Answer text to clipboard cleanly
-  const copyFaqContent = useCallback((item: typeof FAQS_DATA[0]) => {
+  const copyFaqContent = useCallback((item: FAQItem) => {
     if (typeof window === 'undefined') return;
     const formattedText = `Q: ${item.question}\n\nA: ${item.answer}`;
     navigator.clipboard.writeText(formattedText).then(() => {
@@ -143,7 +239,10 @@ export default function FAQsPageContent() {
   }, []);
 
   // Scroll smoothly to a target FAQ item & expand it
-  const scrollToQuestion = (id: string) => {
+  const scrollToQuestion = (id: string, targetSection?: 'general' | 'technical') => {
+    if (targetSection && activeSection !== 'all' && activeSection !== targetSection) {
+      setActiveSection(targetSection);
+    }
     setOpenItems((prev) => ({ ...prev, [id]: true }));
     if (typeof window === 'undefined') return;
     setTimeout(() => {
@@ -151,21 +250,92 @@ export default function FAQsPageContent() {
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-    }, 100);
+    }, 120);
+  };
+
+  // Helper to format text with links and bullets
+  const renderFormattedText = (text: string) => {
+    const lines = text.split('\n');
+
+    return (
+      <div className="space-y-2 text-sm sm:text-base leading-relaxed">
+        {lines.map((line, idx) => {
+          const trimmed = line.trim();
+
+          // Check for bullet point
+          if (trimmed.startsWith('• ') || trimmed.startsWith('- ')) {
+            const bulletText = trimmed.substring(2);
+            return (
+              <div key={idx} className="flex items-start gap-2.5 pl-1.5 sm:pl-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#6C151E] dark:bg-[#F0A2B0] shrink-0 mt-2" />
+                <span className="flex-1">{renderWithLinks(bulletText)}</span>
+              </div>
+            );
+          }
+
+          // Check for numbered list (e.g. 1. 2.)
+          const numMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
+          if (numMatch) {
+            return (
+              <div key={idx} className="flex items-start gap-2.5 pl-1.5 sm:pl-2">
+                <span className="font-mono text-xs font-bold text-[#6C151E] dark:text-[#F0A2B0] shrink-0 mt-0.5 min-w-[1.2rem]">
+                  {numMatch[1]}.
+                </span>
+                <span className="flex-1">{renderWithLinks(numMatch[2])}</span>
+              </div>
+            );
+          }
+
+          if (!trimmed) {
+            return <div key={idx} className="h-1.5" />;
+          }
+
+          return (
+            <p key={idx} className="text-[#2A2120] dark:text-[#D5C9C8]">
+              {renderWithLinks(line)}
+            </p>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // Convert raw URLs into clickable anchor links
+  const renderWithLinks = (str: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = str.split(urlRegex);
+
+    return parts.map((part, i) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a
+            key={i}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 font-semibold text-[#6C151E] dark:text-[#F0A2B0] underline underline-offset-2 hover:opacity-80 transition-opacity break-all"
+          >
+            <span>{part}</span>
+            <ExternalLink size={13} className="shrink-0" />
+          </a>
+        );
+      }
+      return part;
+    });
   };
 
   return (
     <div className="w-full flex flex-col min-h-screen bg-[var(--background)] text-[var(--foreground)] selection:bg-[#6C151E] selection:text-[#F5F3F0]">
       
       {/* =========================================================================
-          HERO + KEY HIGHLIGHTS VIEWPORT WRAPPER (100vh MIN-HEIGHT COVERAGE)
+          HERO + KEY HIGHLIGHTS VIEWPORT WRAPPER
           ========================================================================= */}
       <div className="relative w-full min-h-[calc(100vh-80px)] lg:min-h-[calc(100vh-84px)] flex flex-col justify-between">
-        {/* SECTION 01: CLEAN EDITORIAL HERO SECTION */}
+        {/* SECTION 01: EDITORIAL HERO SECTION */}
         <section
           id="hero"
           data-section="top"
-          className="relative w-full flex-1 overflow-hidden bg-gradient-to-b from-[#FAF7F2] via-[#F4E8DC]/30 to-[#FAF7F5] dark:from-[#0B0506] dark:via-[#14080A] dark:to-[#0B0506] border-b border-[rgba(108,21,30,0.15)] dark:border-[rgba(61,20,24,0.6)] transition-colors duration-300 py-6 sm:py-8 lg:py-12 flex items-center"
+          className="relative w-full flex-1 overflow-hidden bg-gradient-to-b from-[#FAF7F2] via-[#F4E8DC]/30 to-[#FAF7F5] dark:from-[#0B0506] dark:via-[#14080A] dark:to-[#0B0506] border-b border-[rgba(108,21,30,0.15)] dark:border-[rgba(61,20,24,0.6)] transition-colors duration-300 py-8 sm:py-12 lg:py-16 flex items-center"
         >
           {/* QUANTUM WAVE FIELD CANVAS */}
           <QuantumWaveField className="opacity-50 dark:opacity-80" />
@@ -177,82 +347,95 @@ export default function FAQsPageContent() {
           </div>
 
           <div className="relative z-10 mx-auto max-w-[1440px] w-full px-4 sm:px-6 lg:px-8 xl:px-12">
-            <div className="max-w-3xl space-y-3.5 sm:space-y-4 pointer-events-auto">
+            <div className="max-w-4xl space-y-4 sm:space-y-5 pointer-events-auto">
               
-              {/* Main Headline (Dark Mode: Soft Rose Pink + White matching reference image) */}
+              {/* Category Pill Tag */}
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                custom={0.02}
+                variants={fadeInUpVariant}
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#6C151E]/20 dark:border-[#3D1418] bg-white/80 dark:bg-[#1A0A0D]/80 backdrop-blur-md shadow-xs"
+              >
+                <Sparkles size={14} className="text-[#6C151E] dark:text-[#F0A2B0]" />
+                <span className="text-xs font-sans font-bold uppercase tracking-widest text-[#6C151E] dark:text-[#F0A2B0]">
+                  Official Participant Knowledge Base • 100+ Source-Grounded FAQs
+                </span>
+              </motion.div>
+
+              {/* Main Headline */}
               <motion.h1
-                className="font-serif text-[clamp(2rem,4.5vw,3.8rem)] font-bold leading-[1.02] tracking-[-0.03em] m-0 text-[#A7192A] dark:text-[#F0A2B0]"
+                className="font-serif text-[clamp(2.2rem,5vw,4.2rem)] font-bold leading-[1.02] tracking-[-0.03em] m-0 text-[#A7192A] dark:text-[#F0A2B0]"
                 initial="hidden"
                 animate="visible"
                 custom={0.05}
                 variants={fadeInUpVariant}
               >
                 <span className="block">
-                  <StaggeredTextReveal text="Frequently Asked" delay={0.05} stagger={0.02} letterClassName="text-[#A7192A] dark:text-[#F0A2B0]" />
+                  <StaggeredTextReveal text="Participant FAQ &" delay={0.05} stagger={0.02} letterClassName="text-[#A7192A] dark:text-[#F0A2B0]" />
                 </span>
                 <span className="block mt-0.5 sm:mt-1">
-                  <StaggeredTextReveal text="Questions." delay={0.2} stagger={0.025} letterClassName="font-serif italic font-semibold text-[#6C151E] dark:text-white" />
+                  <StaggeredTextReveal text="Challenge Dossier." delay={0.2} stagger={0.025} letterClassName="font-serif italic font-semibold text-[#6C151E] dark:text-white" />
                 </span>
               </motion.h1>
 
               {/* Description Subtext */}
               <motion.p
-                className="font-sans font-normal text-[#4E4441] dark:text-[#C4B9B8] text-sm sm:text-base leading-relaxed max-w-2xl"
+                className="font-sans font-normal text-[#4E4441] dark:text-[#C4B9B8] text-sm sm:text-base md:text-lg leading-relaxed max-w-3xl"
                 initial="hidden"
                 animate="visible"
                 custom={0.15}
                 variants={fadeInUpVariant}
               >
-                Detailed answers on the two-phase schedule, ₹99 course fee, technical challenges, eligibility criteria, and preparation guidelines for Qiskit Fall Fest 2026.
+                Compiled strictly from official QFF 2026 challenge documentation. Explore General Event Rules, Registration &amp; Venue Details, along with complete Technical Hackathon guidelines across all 5 tracks: Quantum Chemistry, Optimization, Simulation, QML, and Post-Quantum Cryptography.
               </motion.p>
 
-              {/* Key Highlights Domain Cards */}
+              {/* Quick Jump Domain Buttons */}
               <motion.div
-                className="pt-1.5 space-y-2.5 max-w-2xl"
+                className="pt-2 flex flex-wrap items-center gap-2.5 sm:gap-3"
                 initial="hidden"
                 animate="visible"
                 custom={0.25}
                 variants={fadeInUpVariant}
               >
-                <div className="font-sans text-xs font-bold uppercase tracking-widest text-[#A7192A] dark:text-[#F0A2B0]">
-                  KEY EVENT HIGHLIGHTS
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleSectionChange('general')}
+                  className={`inline-flex items-center gap-2 px-4 py-2 sm:py-2.5 rounded-xl font-sans text-xs sm:text-sm font-bold transition-all duration-300 shadow-xs cursor-pointer ${
+                    activeSection === 'general'
+                      ? 'bg-[#6C151E] text-white shadow-md'
+                      : 'bg-white/90 dark:bg-[#180C0E] text-[#3A0B10] dark:text-[#F0A2B0] border border-[#6C151E]/20 dark:border-[#3D1418] hover:border-[#6C151E]'
+                  }`}
+                >
+                  <BookOpen size={16} />
+                  <span>General FAQs ({GENERAL_FAQS.length})</span>
+                </button>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
-                  {/* Card 1: Schedule & Dates */}
-                  <button
-                    type="button"
-                    onClick={() => scrollToQuestion('faq-02')}
-                    className="group relative flex flex-col justify-center p-3.5 sm:p-4 rounded-xl border border-[#6C151E]/20 dark:border-[#3D1418] bg-white/95 dark:bg-[#180C0E] text-left transition-all duration-300 hover:border-[#6C151E] dark:hover:border-[#F0A2B0]/50 shadow-xs hover:shadow-lg hover:-translate-y-0.5 cursor-pointer overflow-hidden backdrop-blur-xl"
-                  >
-                    {/* Smooth Color Spread Hover Shade */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#6C151E] via-[#8A1522] to-[#A7192A] dark:from-[#3D1418] dark:via-[#6C151E] dark:to-[#A7192A] opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out pointer-events-none" />
+                <button
+                  type="button"
+                  onClick={() => handleSectionChange('technical')}
+                  className={`inline-flex items-center gap-2 px-4 py-2 sm:py-2.5 rounded-xl font-sans text-xs sm:text-sm font-bold transition-all duration-300 shadow-xs cursor-pointer ${
+                    activeSection === 'technical'
+                      ? 'bg-[#6C151E] text-white shadow-md'
+                      : 'bg-white/90 dark:bg-[#180C0E] text-[#3A0B10] dark:text-[#F0A2B0] border border-[#6C151E]/20 dark:border-[#3D1418] hover:border-[#6C151E]'
+                  }`}
+                >
+                  <Cpu size={16} />
+                  <span>Technical &amp; Hackathon FAQs ({TECHNICAL_FAQS.length})</span>
+                </button>
 
-                    <div className="relative z-10 font-serif font-bold text-base sm:text-lg text-[#211818] dark:text-white leading-tight group-hover:text-white transition-colors duration-300">
-                      Schedule &amp; Dates
-                    </div>
-                    <div className="relative z-10 text-xs sm:text-sm font-sans font-semibold text-[#6C151E] dark:text-[#F0A2B0] group-hover:text-white dark:group-hover:text-white transition-colors duration-300 mt-0.5">
-                      Oct 8–10 &amp; Oct 26–30
-                    </div>
-                  </button>
-
-                  {/* Card 2: Registration & Fee */}
-                  <button
-                    type="button"
-                    onClick={() => scrollToQuestion('faq-14')}
-                    className="group relative flex flex-col justify-center p-3.5 sm:p-4 rounded-xl border border-[#6C151E]/20 dark:border-[#3D1418] bg-white/95 dark:bg-[#180C0E] text-left transition-all duration-300 hover:border-[#6C151E] dark:hover:border-[#F0A2B0]/50 shadow-xs hover:shadow-lg hover:-translate-y-0.5 cursor-pointer overflow-hidden backdrop-blur-xl"
-                  >
-                    {/* Smooth Color Spread Hover Shade */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#6C151E] via-[#8A1522] to-[#A7192A] dark:from-[#3D1418] dark:via-[#6C151E] dark:to-[#A7192A] opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out pointer-events-none" />
-
-                    <div className="relative z-10 font-serif font-bold text-base sm:text-lg text-[#211818] dark:text-white leading-tight group-hover:text-white transition-colors duration-300">
-                      Registration &amp; Fee
-                    </div>
-                    <div className="relative z-10 text-xs sm:text-sm font-sans font-semibold text-[#6C151E] dark:text-[#F0A2B0] group-hover:text-white dark:group-hover:text-white transition-colors duration-300 mt-0.5">
-                      ₹99 Online Course Fee
-                    </div>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleSectionChange('all')}
+                  className={`inline-flex items-center gap-2 px-4 py-2 sm:py-2.5 rounded-xl font-sans text-xs sm:text-sm font-bold transition-all duration-300 shadow-xs cursor-pointer ${
+                    activeSection === 'all'
+                      ? 'bg-[#6C151E] text-white shadow-md'
+                      : 'bg-white/90 dark:bg-[#180C0E] text-[#3A0B10] dark:text-[#F0A2B0] border border-[#6C151E]/20 dark:border-[#3D1418] hover:border-[#6C151E]'
+                  }`}
+                >
+                  <Layers size={16} />
+                  <span>All Questions ({FAQS_DATA.length})</span>
+                </button>
               </motion.div>
 
             </div>
@@ -277,52 +460,52 @@ export default function FAQsPageContent() {
               {/* Metric 1 */}
               <div className="group flex flex-col items-start p-4 rounded-2xl bg-white/12 dark:bg-[#1A060A]/85 border border-white/20 dark:border-[#4A151C] hover:border-white/40 dark:hover:border-[#F0A2B0]/50 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 shadow-lg">
                 <span className="font-sans text-xs font-bold tracking-widest uppercase text-[#F5DABF] dark:text-[#F0A2B0] mb-1">
-                  Directory Scope
+                  Total Questions
                 </span>
-                <div className="font-serif text-xl sm:text-2xl font-bold text-white leading-tight group-hover:text-white transition-colors">
-                  All FAQ Topics
+                <div className="font-serif text-xl sm:text-2xl font-bold text-white leading-tight">
+                  102 Verified Items
                 </div>
                 <span className="text-xs font-sans text-[#F0E6E3] dark:text-[#C4B9B8] mt-1">
-                  Complete Festival Guide
+                  18 General • 84 Technical
                 </span>
               </div>
 
               {/* Metric 2 */}
               <div className="group flex flex-col items-start p-4 rounded-2xl bg-white/12 dark:bg-[#1A060A]/85 border border-white/20 dark:border-[#4A151C] hover:border-white/40 dark:hover:border-[#F0A2B0]/50 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 shadow-lg">
                 <span className="font-sans text-xs font-bold tracking-widest uppercase text-[#F5DABF] dark:text-[#F0A2B0] mb-1">
-                  Event Timeline
+                  Hackathon Tracks
                 </span>
-                <div className="font-serif text-lg sm:text-xl font-bold text-white leading-tight group-hover:text-white transition-colors">
-                  Oct 8–10 &amp; 26–30
+                <div className="font-serif text-lg sm:text-xl font-bold text-white leading-tight">
+                  5 Domain Tracks
                 </div>
                 <span className="text-xs font-sans text-[#F0E6E3] dark:text-[#C4B9B8] mt-1">
-                  Two-Phase Hybrid Festival
+                  Chemistry • Opt • Sim • QML • PQC
                 </span>
               </div>
 
               {/* Metric 3 */}
               <div className="group flex flex-col items-start p-4 rounded-2xl bg-white/12 dark:bg-[#1A060A]/85 border border-white/20 dark:border-[#4A151C] hover:border-white/40 dark:hover:border-[#F0A2B0]/50 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 shadow-lg">
                 <span className="font-sans text-xs font-bold tracking-widest uppercase text-[#F5DABF] dark:text-[#F0A2B0] mb-1">
-                  Online Course
+                  Phase 1 Benchmarks
                 </span>
-                <div className="font-serif text-xl sm:text-2xl font-bold text-white leading-tight group-hover:text-white transition-colors">
-                  ₹99 Fee
+                <div className="font-serif text-xl sm:text-2xl font-bold text-white leading-tight">
+                  Processor A &amp; B
                 </div>
                 <span className="text-xs font-sans text-[#F0E6E3] dark:text-[#C4B9B8] mt-1">
-                  Per Participant Registration
+                  5Q Linear &amp; 9Q Heavy-Hex
                 </span>
               </div>
 
               {/* Metric 4 */}
               <div className="group flex flex-col items-start p-4 rounded-2xl bg-white/12 dark:bg-[#1A060A]/85 border border-white/20 dark:border-[#4A151C] hover:border-white/40 dark:hover:border-[#F0A2B0]/50 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 shadow-lg">
                 <span className="font-sans text-xs font-bold tracking-widest uppercase text-[#F5DABF] dark:text-[#F0A2B0] mb-1">
-                  Host Institution
+                  Submission Deadline
                 </span>
-                <div className="font-serif text-lg sm:text-xl font-bold text-white leading-tight group-hover:text-white transition-colors">
-                  SRM University-AP
+                <div className="font-serif text-lg sm:text-xl font-bold text-white leading-tight">
+                  13 Oct • 11:59 PM
                 </div>
                 <span className="text-xs font-sans text-[#F0E6E3] dark:text-[#C4B9B8] mt-1">
-                  Amaravati, Andhra Pradesh
+                  Phase 1 Online Sprint Finale
                 </span>
               </div>
 
@@ -332,79 +515,224 @@ export default function FAQsPageContent() {
       </div>
 
       {/* =========================================================================
-          SECTION 03: CLEAN CONTROL BAR (SEARCH BAR + EXPAND ALL BUTTON ONLY)
+          SECTION 03: CONTROL BAR (PRIMARY TABS, SEARCH, AND CATEGORY PILLS)
           ========================================================================= */}
       <section
         id="faq-controls"
         aria-label="FAQ Search & Controls"
-        className="sticky top-[80px] sm:top-[84px] z-30 w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-2.5 pointer-events-none transition-colors duration-300"
+        className="sticky top-[80px] sm:top-[84px] z-30 w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-3 pointer-events-none transition-colors duration-300"
       >
-        <div className="mx-auto max-w-[1440px] rounded-2xl p-3.5 sm:p-4 bg-white/95 dark:bg-[#16080B]/95 backdrop-blur-xl border border-[#3A0B10]/15 dark:border-[#3D1418] shadow-xl pointer-events-auto flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="mx-auto max-w-[1440px] rounded-2xl p-3.5 sm:p-4 bg-white/95 dark:bg-[#16080B]/95 backdrop-blur-xl border border-[#3A0B10]/15 dark:border-[#3D1418] shadow-xl pointer-events-auto space-y-3">
           
-          {/* Instant Search Bar */}
-          <div className="relative flex-1">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#6C151E] dark:text-[#F0A2B0]">
-              <Search size={18} />
-            </div>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search the FAQ by keywords (e.g., ₹99 fee, October dates, Python, Quiddles)..."
-              aria-label="Search the FAQ"
-              className="w-full pl-10 pr-10 py-2.5 sm:py-3 rounded-xl border border-[#3A0B10]/20 dark:border-[#3D1418] bg-white dark:bg-[#1C0B0E] text-sm sm:text-base font-sans text-[#16171B] dark:text-white placeholder-[#16171B]/45 dark:placeholder-[#9C8F8E] focus:outline-none focus:ring-2 focus:ring-[#6C151E] dark:focus:ring-[#F0A2B0] transition-all shadow-xs"
-            />
-            {searchQuery && (
+          {/* Top Row: Primary Section Switcher + Search Bar + Expand Toggle */}
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+            
+            {/* Primary Mode Tabs */}
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#FAF7F2] dark:bg-[#1C0B0E] border border-[#3A0B10]/10 dark:border-[#3D1418] shrink-0 self-start lg:self-auto overflow-x-auto max-w-full">
               <button
                 type="button"
-                onClick={() => setSearchQuery('')}
-                aria-label="Clear search"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#16171B]/50 dark:text-[#9C8F8E] hover:text-[#3A0B10] dark:hover:text-white cursor-pointer"
+                onClick={() => handleSectionChange('all')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-sans font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  activeSection === 'all'
+                    ? 'bg-[#6C151E] text-white shadow-xs'
+                    : 'text-[#3A0B10]/70 dark:text-[#C4B9B8] hover:text-[#3A0B10] dark:hover:text-white'
+                }`}
               >
-                <X size={17} />
+                All FAQs ({FAQS_DATA.length})
               </button>
-            )}
-          </div>
+              <button
+                type="button"
+                onClick={() => handleSectionChange('general')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-sans font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  activeSection === 'general'
+                    ? 'bg-[#6C151E] text-white shadow-xs'
+                    : 'text-[#3A0B10]/70 dark:text-[#C4B9B8] hover:text-[#3A0B10] dark:hover:text-white'
+                }`}
+              >
+                General FAQs ({GENERAL_FAQS.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSectionChange('technical')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-sans font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  activeSection === 'technical'
+                    ? 'bg-[#6C151E] text-white shadow-xs'
+                    : 'text-[#3A0B10]/70 dark:text-[#C4B9B8] hover:text-[#3A0B10] dark:hover:text-white'
+                }`}
+              >
+                Technical &amp; Hackathon ({TECHNICAL_FAQS.length})
+              </button>
+            </div>
 
-          {/* Right Action: Expand All / Collapse All Toggle */}
-          <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
-            {searchQuery && (
-              <span className="text-xs sm:text-sm font-sans font-semibold text-[#16171B]/70 dark:text-[#C4B9B8] bg-white/60 dark:bg-black/40 px-3 py-2 rounded-xl border border-[#3A0B10]/10 dark:border-[#3D1418]">
-                {filteredFaqs.length} Results
-              </span>
-            )}
-
-            <button
-              type="button"
-              onClick={toggleAll}
-              className="inline-flex items-center gap-2 px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-sans font-bold bg-[#6C151E] text-white dark:bg-[#2A1014] dark:text-[#F0A2B0] border border-transparent dark:border-[#4A151C] hover:bg-[#8A1B27] dark:hover:bg-[#3A141A] transition-all duration-300 shadow-md cursor-pointer"
-            >
-              {areAllExpanded ? (
-                <>
-                  <Minimize2 size={15} />
-                  <span>Collapse All</span>
-                </>
-              ) : (
-                <>
-                  <Maximize2 size={15} />
-                  <span>Expand All</span>
-                </>
+            {/* Instant Search Bar */}
+            <div className="relative flex-1 min-w-[240px]">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#6C151E] dark:text-[#F0A2B0]">
+                <Search size={18} />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search FAQs (e.g. C1 H2, QAOA, Processor A/B, noise model, rubric, ₹99)..."
+                aria-label="Search the FAQ"
+                className="w-full pl-10 pr-10 py-2 sm:py-2.5 rounded-xl border border-[#3A0B10]/20 dark:border-[#3D1418] bg-white dark:bg-[#1C0B0E] text-sm font-sans text-[#16171B] dark:text-white placeholder-[#16171B]/45 dark:placeholder-[#9C8F8E] focus:outline-none focus:ring-2 focus:ring-[#6C151E] dark:focus:ring-[#F0A2B0] transition-all shadow-xs"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  aria-label="Clear search"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#16171B]/50 dark:text-[#9C8F8E] hover:text-[#3A0B10] dark:hover:text-white cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
               )}
-            </button>
+            </div>
+
+            {/* Right Tools: Result Counter & Expand/Collapse */}
+            <div className="flex items-center justify-between lg:justify-end gap-2 shrink-0">
+              {searchQuery && (
+                <span className="text-xs font-sans font-semibold text-[#16171B]/70 dark:text-[#C4B9B8] bg-white/60 dark:bg-black/40 px-2.5 py-1.5 rounded-lg border border-[#3A0B10]/10 dark:border-[#3D1418]">
+                  {filteredFaqs.length} Matched
+                </span>
+              )}
+
+              <button
+                type="button"
+                onClick={toggleAll}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-sans font-bold bg-[#6C151E] text-white dark:bg-[#2A1014] dark:text-[#F0A2B0] border border-transparent dark:border-[#4A151C] hover:bg-[#8A1B27] dark:hover:bg-[#3A141A] transition-all duration-300 shadow-sm cursor-pointer"
+              >
+                {areAllExpanded ? (
+                  <>
+                    <Minimize2 size={14} />
+                    <span>Collapse All</span>
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 size={14} />
+                    <span>Expand All</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
+
+          {/* Bottom Row: Category Filter Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 scrollbar-thin">
+            <span className="text-xs font-sans font-bold text-[#6C151E] dark:text-[#F0A2B0] uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1">
+              <Layers size={13} />
+              Filter:
+            </span>
+            {availableCategories.map((cat) => {
+              const isSelected = selectedCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3 py-1 rounded-lg text-xs font-sans font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 ${
+                    isSelected
+                      ? 'bg-[#6C151E] text-white shadow-xs'
+                      : 'bg-white/80 dark:bg-[#180C0E] text-[#2A1014] dark:text-[#C4B9B8] border border-[#3A0B10]/10 dark:border-[#3D1418] hover:border-[#6C151E]/40 dark:hover:border-[#F0A2B0]/40'
+                  }`}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+
         </div>
       </section>
 
       {/* =========================================================================
-          SECTION 04: FULL ACCORDION FAQ DIRECTORY
+          SECTION 04: FAQ ACCORDION DIRECTORY + TECHNICAL ADVISORIES
           ========================================================================= */}
       <section
         id="faq-directory"
-        aria-label="Complete FAQ Questions List"
-        className="w-full py-12 sm:py-16 lg:py-20 bg-[#FAF7F5] dark:bg-[#0D0506] transition-colors duration-300 flex-grow"
+        aria-label="FAQ Questions Directory"
+        className="w-full py-10 sm:py-14 lg:py-16 bg-[#FAF7F5] dark:bg-[#0D0506] transition-colors duration-300 flex-grow"
       >
         <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-12 space-y-6">
           
+          {/* TECHNICAL BENCHMARK NOTICE BOX (Shown when viewing Technical or All FAQs) */}
+          {(activeSection === 'technical' || activeSection === 'all') && (
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="rounded-2xl p-5 sm:p-7 bg-gradient-to-br from-[#FAF2E8] via-white to-[#F8EFE4] dark:from-[#21090C] dark:via-[#1A080A] dark:to-[#160608] border-2 border-[#B08D57]/50 dark:border-[#B08D57]/40 shadow-md space-y-4"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#B08D57]/20 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-[#6C151E]/10 dark:bg-[#B08D57]/20 text-[#6C151E] dark:text-[#B08D57] flex items-center justify-center shrink-0">
+                    <Cpu size={22} />
+                  </div>
+                  <div>
+                    <h3 className="font-serif font-bold text-base sm:text-lg text-[#3A0B10] dark:text-white">
+                      {TECHNICAL_BENCHMARK_NOTICE.title}
+                    </h3>
+                    <p className="text-xs font-sans text-[#6C151E] dark:text-[#F0A2B0] font-medium">
+                      {TECHNICAL_BENCHMARK_NOTICE.subtitle}
+                    </p>
+                  </div>
+                </div>
+
+                <a
+                  href={TECHNICAL_BENCHMARK_NOTICE.folderUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-sans font-bold bg-[#6C151E] text-white dark:bg-[#B08D57] dark:text-[#14080A] hover:opacity-90 transition-opacity shrink-0"
+                >
+                  <span>Challenge Drive Folder</span>
+                  <ExternalLink size={13} />
+                </a>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                {TECHNICAL_BENCHMARK_NOTICE.details.map((point, pIdx) => (
+                  <div
+                    key={pIdx}
+                    className="flex items-start gap-2.5 p-3 rounded-xl bg-white/80 dark:bg-[#150709] border border-[#B08D57]/25 dark:border-[#3D1418] text-xs sm:text-sm font-sans text-[#2A1818] dark:text-[#D5C9C8]"
+                  >
+                    <CheckCircle2 size={16} className="text-[#886937] dark:text-[#B08D57] shrink-0 mt-0.5" />
+                    <span>{point}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* CROSS-SECTION SEARCH HINTS */}
+          {searchQuery && activeSection !== 'all' && (
+            <div className="flex flex-wrap items-center gap-3 p-3.5 rounded-xl bg-white dark:bg-[#180C0E] border border-[#6C151E]/20 dark:border-[#3D1418] text-xs sm:text-sm font-sans">
+              <span className="text-[#3A0B10] dark:text-[#D5C9C8]">
+                Viewing <strong>{filteredFaqs.length}</strong> results in{' '}
+                <span className="capitalize font-semibold">{activeSection} FAQs</span>.
+              </span>
+              {activeSection === 'general' && otherSectionHits.technical > 0 && (
+                <button
+                  type="button"
+                  onClick={() => handleSectionChange('technical')}
+                  className="inline-flex items-center gap-1 font-bold text-[#6C151E] dark:text-[#F0A2B0] hover:underline cursor-pointer ml-auto"
+                >
+                  <span>Switch to Technical FAQs ({otherSectionHits.technical} matches)</span>
+                  <ArrowRight size={14} />
+                </button>
+              )}
+              {activeSection === 'technical' && otherSectionHits.general > 0 && (
+                <button
+                  type="button"
+                  onClick={() => handleSectionChange('general')}
+                  className="inline-flex items-center gap-1 font-bold text-[#6C151E] dark:text-[#F0A2B0] hover:underline cursor-pointer ml-auto"
+                >
+                  <span>Switch to General FAQs ({otherSectionHits.general} matches)</span>
+                  <ArrowRight size={14} />
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Empty Search State */}
           {filteredFaqs.length === 0 ? (
             <div className="text-center py-14 sm:py-16 rounded-2xl border border-dashed border-[#3A0B10]/20 dark:border-[#3D1418] bg-white/50 dark:bg-[#14080A] p-8 space-y-4">
@@ -416,19 +744,30 @@ export default function FAQsPageContent() {
                   No matching questions found
                 </h3>
                 <p className="text-sm font-sans text-[#16171B]/70 dark:text-[#C4B9B8] max-w-md mx-auto">
-                  We couldn&apos;t find any questions matching &ldquo;{searchQuery}&rdquo;.
+                  We couldn&apos;t find any questions matching &ldquo;{searchQuery}&rdquo; in the current section filter.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-sans font-bold bg-[#6C151E] dark:bg-[#2A1014] text-white dark:text-[#F0A2B0] hover:bg-[#4A0D14] dark:hover:bg-[#3A141A] transition-all cursor-pointer shadow-md"
-              >
-                Reset Search
-              </button>
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-sans font-bold bg-[#6C151E] text-white hover:bg-[#8A1522] cursor-pointer"
+                  >
+                    Clear Search
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleSectionChange('all')}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-sans font-bold bg-white dark:bg-[#200A0E] text-[#3A0B10] dark:text-[#F0A2B0] border border-[#6C151E]/20 dark:border-[#3D1418] cursor-pointer"
+                >
+                  View All FAQs
+                </button>
+              </div>
             </div>
           ) : (
-            /* Main FAQ Accordion List (Dark Mode: Soft Rose & Pitch-Black Palette) */
+            /* Main FAQ Accordion List */
             <div className="space-y-4">
               {filteredFaqs.map((item) => {
                 const isOpen = !!openItems[item.id];
@@ -459,11 +798,38 @@ export default function FAQsPageContent() {
                         onClick={() => toggleFaq(item.id)}
                         className="flex-1 min-w-0 text-left space-y-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C151E] rounded-xl cursor-pointer"
                       >
-                        {/* Category Tag */}
-                        <div className="flex items-center gap-2">
-                          <span className="inline-block px-3 py-1 rounded-md text-xs font-sans font-semibold uppercase bg-[#6C151E]/8 dark:bg-[#261014] text-[#6C151E] dark:text-[#F0A2B0] tracking-wider border border-transparent dark:border-[#3D1418]">
+                        {/* Meta Tags Row */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          {/* Section Tag */}
+                          <span
+                            className={`inline-block px-2.5 py-0.5 rounded-md text-[11px] font-sans font-bold uppercase tracking-wider border ${
+                              item.section === 'general'
+                                ? 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/20'
+                                : 'bg-[#6C151E]/10 text-[#6C151E] dark:text-[#F0A2B0] border-[#6C151E]/20 dark:border-[#3D1418]'
+                            }`}
+                          >
+                            {item.section === 'general' ? 'General' : 'Technical'}
+                          </span>
+
+                          {/* Category Tag */}
+                          <span className="inline-block px-2.5 py-0.5 rounded-md text-[11px] font-sans font-semibold uppercase bg-[#FAF2E8] dark:bg-[#261014] text-[#6C151E] dark:text-[#F0A2B0] tracking-wider border border-transparent dark:border-[#3D1418]">
                             {item.category}
                           </span>
+
+                          {/* Track Code Tag if available */}
+                          {item.trackCode && (
+                            <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-[#6C151E] text-white dark:bg-[#B08D57] dark:text-[#14080A]">
+                              {item.trackCode}
+                            </span>
+                          )}
+
+                          {/* Top Question Badge */}
+                          {item.isTopQuestion && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-sans font-bold uppercase tracking-wider bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20">
+                              <Sparkles size={10} />
+                              Essential
+                            </span>
+                          )}
                         </div>
                         
                         {/* Question Headline */}
@@ -472,7 +838,7 @@ export default function FAQsPageContent() {
                         </h2>
                       </button>
 
-                      {/* Right Action Tools: Copy Q&A (Visible only when expanded) + Expand Chevron */}
+                      {/* Right Action Tools: Copy Q&A + Expand Chevron */}
                       <div className="flex items-center gap-2 shrink-0 pt-0.5">
                         <AnimatePresence>
                           {isOpen && (
@@ -534,136 +900,97 @@ export default function FAQsPageContent() {
                           className="overflow-hidden"
                         >
                           <div className="px-4 sm:px-6 pb-5 pt-1">
-                            <div className="p-4 sm:p-5 rounded-xl bg-[#FAF6F0]/80 dark:bg-[#150709] border-l-4 border-[#6C151E] dark:border-[#F0A2B0] text-sm sm:text-base md:text-lg font-sans text-[#2A2120] dark:text-[#C4B9B8] leading-relaxed shadow-xs">
+                            <div className="p-4 sm:p-5 rounded-xl bg-[#FAF6F0]/80 dark:bg-[#150709] border-l-4 border-[#6C151E] dark:border-[#F0A2B0] text-sm sm:text-base md:text-lg font-sans text-[#2A2120] dark:text-[#C4B9B8] leading-relaxed shadow-xs space-y-4">
 
-                            {/* Rich rendering tailored for specific answer content */}
-                            {item.id === 'faq-02' ? (
-                              <div className="space-y-3.5 max-w-4xl">
-                                <p className="font-semibold text-base sm:text-lg text-[#3A0B10] dark:text-white">
-                                  Planned Schedule &amp; Phase Overview:
-                                </p>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 pt-1">
-                                  <div className="p-4 sm:p-5 rounded-xl bg-gradient-to-br from-[#6C151E]/5 to-transparent dark:from-[#240D10] dark:to-[#180C0E] border border-[#6C151E]/20 dark:border-[#3D1418] space-y-1.5">
-                                    <div className="text-xs font-sans font-bold text-[#6C151E] dark:text-[#F0A2B0] uppercase tracking-wider">
-                                      Online Phase
+                              {/* Specialized UI Card for Scoring Rubric (tech-36) */}
+                              {item.id === 'tech-36' && (
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                                  <div className="p-4 rounded-xl bg-white dark:bg-[#1A0A0D] border border-[#6C151E]/20 dark:border-[#3D1418] space-y-1">
+                                    <div className="text-2xl font-serif font-bold text-[#6C151E] dark:text-[#F0A2B0]">
+                                      40 Pts
                                     </div>
-                                    <div className="text-lg sm:text-xl font-serif font-bold text-[#3A0B10] dark:text-white">
-                                      October 8–10, 2026
+                                    <div className="text-xs font-sans font-bold uppercase text-[#3A0B10] dark:text-white">
+                                      Solution Correctness &amp; Performance
                                     </div>
-                                    <p className="text-xs sm:text-sm text-[#16171B]/80 dark:text-[#C4B9B8]">
-                                      Virtual lectures, algorithmic masterclasses, and online interactive sessions.
+                                    <p className="text-xs text-[#554645] dark:text-[#A69796]">
+                                      Correct algorithm, classical baseline comparison, convergence, and problem metric.
                                     </p>
                                   </div>
-
-                                  <div className="p-4 sm:p-5 rounded-xl bg-gradient-to-br from-[#B08D57]/10 to-transparent dark:from-[#240D10] dark:to-[#180C0E] border border-[#B08D57]/30 dark:border-[#3D1418] space-y-1.5">
-                                    <div className="text-xs font-sans font-bold text-[#886937] dark:text-[#F0A2B0] uppercase tracking-wider">
-                                      Offline Phase
+                                  <div className="p-4 rounded-xl bg-white dark:bg-[#1A0A0D] border border-[#6C151E]/20 dark:border-[#3D1418] space-y-1">
+                                    <div className="text-2xl font-serif font-bold text-[#886937] dark:text-[#B08D57]">
+                                      30 Pts
                                     </div>
-                                    <div className="text-lg sm:text-xl font-serif font-bold text-[#3A0B10] dark:text-white">
-                                      October 26–30, 2026
+                                    <div className="text-xs font-sans font-bold uppercase text-[#3A0B10] dark:text-white">
+                                      Architecture Analysis
                                     </div>
-                                    <p className="text-xs sm:text-sm text-[#16171B]/80 dark:text-[#C4B9B8]">
-                                      Hosted at SRM University-AP campus, Amaravati, Andhra Pradesh, India.
+                                    <p className="text-xs text-[#554645] dark:text-[#A69796]">
+                                      Processor A vs B, circuit depth, 2-qubit gate count, SWAP overhead, and fidelity.
+                                    </p>
+                                  </div>
+                                  <div className="p-4 rounded-xl bg-white dark:bg-[#1A0A0D] border border-[#6C151E]/20 dark:border-[#3D1418] space-y-1">
+                                    <div className="text-2xl font-serif font-bold text-[#A7192A] dark:text-[#F0A2B0]">
+                                      30 Pts
+                                    </div>
+                                    <div className="text-xs font-sans font-bold uppercase text-[#3A0B10] dark:text-white">
+                                      Phase 2 Readiness &amp; Insight
+                                    </div>
+                                    <p className="text-xs text-[#554645] dark:text-[#A69796]">
+                                      Technical depth, evidence-based reasoning, clean plots, and report organization.
                                     </p>
                                   </div>
                                 </div>
-                              </div>
-                            ) : item.id === 'faq-07' ? (
-                              <div className="space-y-3.5 max-w-4xl">
-                                <p className="font-semibold text-base sm:text-lg text-[#3A0B10] dark:text-white">
-                                  The proposed activities at SRM University-AP include:
-                                </p>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 pt-1">
-                                  <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#180C0E] border border-[#3A0B10]/15 dark:border-[#3D1418] space-y-1.5">
-                                    <h4 className="font-serif font-bold text-[#3A0B10] dark:text-white text-lg sm:text-xl">
-                                      Quantum Quiddles
-                                    </h4>
-                                    <p className="text-xs sm:text-sm text-[#16171B]/85 dark:text-[#C4B9B8]">
-                                      An individual quiz-and-riddle competition featuring 20 quantum-themed questions.
+                              )}
+
+                              {/* Specialized UI Card for Processor Comparison (tech-18, tech-19, tech-20) */}
+                              {(item.id === 'tech-18' || item.id === 'tech-19' || item.id === 'tech-20') && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                                  <div className="p-4 rounded-xl bg-white dark:bg-[#1A0A0D] border border-[#6C151E]/20 dark:border-[#3D1418] space-y-1">
+                                    <span className="text-xs font-bold uppercase text-[#6C151E] dark:text-[#F0A2B0]">
+                                      Processor A
+                                    </span>
+                                    <div className="text-lg font-serif font-bold text-[#3A0B10] dark:text-white">
+                                      5 Physical Qubits (q0–q4)
+                                    </div>
+                                    <p className="text-xs text-[#554645] dark:text-[#A69796]">
+                                      Linear chain topology. Transpilation to non-nearest neighbors requires SWAP insertion.
                                     </p>
                                   </div>
-
-                                  <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#180C0E] border border-[#3A0B10]/15 dark:border-[#3D1418] space-y-1.5">
-                                    <h4 className="font-serif font-bold text-[#3A0B10] dark:text-white text-lg sm:text-xl">
-                                      QTalk
-                                    </h4>
-                                    <p className="text-xs sm:text-sm text-[#16171B]/85 dark:text-[#C4B9B8]">
-                                      A 2-minute presentation on a quantum concept or project-related topic.
-                                    </p>
-                                  </div>
-
-                                  <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#180C0E] border border-[#3A0B10]/15 dark:border-[#3D1418] space-y-1.5">
-                                    <h4 className="font-serif font-bold text-[#3A0B10] dark:text-white text-lg sm:text-xl">
-                                      Guess the QTech
-                                    </h4>
-                                    <p className="text-xs sm:text-sm text-[#16171B]/85 dark:text-[#C4B9B8]">
-                                      A team-based game involving the identification of quantum technologies through clues.
-                                    </p>
-                                  </div>
-
-                                  <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#180C0E] border border-[#3A0B10]/15 dark:border-[#3D1418] space-y-1.5">
-                                    <h4 className="font-serif font-bold text-[#3A0B10] dark:text-white text-lg sm:text-xl">
-                                      Technical Activities
-                                    </h4>
-                                    <p className="text-xs sm:text-sm text-[#16171B]/85 dark:text-[#C4B9B8]">
-                                      Quantum computing challenges and topics such as quantum repeaters and long-distance entanglement.
+                                  <div className="p-4 rounded-xl bg-white dark:bg-[#1A0A0D] border border-[#6C151E]/20 dark:border-[#3D1418] space-y-1">
+                                    <span className="text-xs font-bold uppercase text-[#886937] dark:text-[#B08D57]">
+                                      Processor B
+                                    </span>
+                                    <div className="text-lg font-serif font-bold text-[#3A0B10] dark:text-white">
+                                      9 Physical Qubits (q0–q8)
+                                    </div>
+                                    <p className="text-xs text-[#554645] dark:text-[#A69796]">
+                                      Heavy-hex graph connectivity. All nine nodes must be utilized per simulation-derived spec.
                                     </p>
                                   </div>
                                 </div>
-                              </div>
-                            ) : item.id === 'faq-08' ? (
-                              <div className="space-y-3.5 max-w-4xl">
-                                <p className="font-semibold text-base sm:text-lg text-[#3A0B10] dark:text-white">
-                                  For online activities and hands-on sessions, participants are advised to have:
-                                </p>
-                                <ul className="space-y-2.5 pt-1">
-                                  {[
-                                    'A laptop and a stable internet connection.',
-                                    'A GitHub account, where required.',
-                                    'Basic Python knowledge.',
-                                    'Basic knowledge of quantum computing.',
-                                    'Familiarity with Qiskit, particularly for advanced technical activities.',
-                                  ].map((bullet, bIdx) => (
-                                    <li
-                                      key={bIdx}
-                                      className="flex items-start gap-3 p-3.5 rounded-xl bg-white dark:bg-[#180C0E] border border-[#3A0B10]/10 dark:border-[#3D1418] shadow-xs"
+                              )}
+
+                              {/* Main Formatted Answer Rendering */}
+                              {renderFormattedText(item.answer)}
+
+                              {/* Tags Footer */}
+                              {item.tags && item.tags.length > 0 && (
+                                <div className="pt-2 flex flex-wrap items-center gap-1.5 border-t border-[#3A0B10]/10 dark:border-[#3D1418]/60">
+                                  <span className="text-[11px] font-sans font-semibold text-[#16171B]/50 dark:text-[#C4B9B8]/50 uppercase tracking-wider mr-1">
+                                    Tags:
+                                  </span>
+                                  {item.tags.map((tag, tIdx) => (
+                                    <button
+                                      key={tIdx}
+                                      type="button"
+                                      onClick={() => setSearchQuery(tag)}
+                                      className="text-[11px] font-sans px-2 py-0.5 rounded-md bg-white/60 dark:bg-[#1C0A0D] border border-[#3A0B10]/10 dark:border-[#3D1418] text-[#6C151E] dark:text-[#F0A2B0] hover:border-[#6C151E] transition-colors cursor-pointer"
                                     >
-                                      <span className="h-2 w-2 rounded-full bg-[#6C151E] dark:bg-[#F0A2B0] shrink-0 mt-2" />
-                                      <span className="text-sm sm:text-base font-medium text-[#16171B]/90 dark:text-white">
-                                        {bullet}
-                                      </span>
-                                    </li>
+                                      #{tag}
+                                    </button>
                                   ))}
-                                </ul>
-                              </div>
-                            ) : item.id === 'faq-14' ? (
-                              <div className="space-y-3.5 max-w-4xl">
-                                <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-[#6C151E]/10 via-[#3A0B10]/5 to-transparent dark:from-[#240D10] dark:to-[#180C0E] border border-[#6C151E]/30 dark:border-[#3D1418] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xs">
-                                  <div>
-                                    <div className="text-xs font-sans font-bold uppercase tracking-wider text-[#6C151E] dark:text-[#F0A2B0]">
-                                      Online Course Registration Fee
-                                    </div>
-                                    <div className="text-xl sm:text-3xl font-serif font-bold text-[#3A0B10] dark:text-white mt-1">
-                                      ₹99 per participant
-                                    </div>
-                                    <p className="text-xs sm:text-sm text-[#16171B]/80 dark:text-[#C4B9B8] mt-1.5">
-                                      The registration fee for the Qiskit Fall Fest 2026 online course is ₹99 per participant.
-                                    </p>
-                                  </div>
-                                  <Link
-                                    href="/schedule"
-                                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-xs sm:text-sm font-sans font-bold bg-[#6C151E] text-white hover:bg-[#8A1B27] dark:bg-[#F0A2B0] dark:text-[#14080A] dark:hover:bg-[#F7B5C1] transition-all shadow-md shrink-0 cursor-pointer"
-                                  >
-                                    <span>Explore Schedule</span>
-                                    <ArrowRight size={16} />
-                                  </Link>
                                 </div>
-                              </div>
-                            ) : (
-                              <p className="max-w-4xl whitespace-pre-line text-sm sm:text-base md:text-lg">
-                                {item.answer}
-                              </p>
-                            )}
+                              )}
+
                             </div>
                           </div>
                         </motion.div>
@@ -715,7 +1042,7 @@ export default function FAQsPageContent() {
                 Connect with the SRMAP Organizing Committee
               </h3>
               <p className="text-sm sm:text-base font-sans text-[#E5E5E7]/80 leading-relaxed">
-                Contact the SRMAP Qiskit Fall Fest 2026 organizing committee through the official event communication channels or explore our scheduled tracks.
+                Contact the SRMAP Qiskit Fall Fest 2026 organizing committee through the official participant WhatsApp channel or explore our comprehensive schedule.
               </p>
             </div>
 
@@ -732,11 +1059,8 @@ export default function FAQsPageContent() {
         </div>
       </section>
 
-      {/* =========================================================================
-          GLOBAL FOOTER
-          ========================================================================= */}
+      {/* GLOBAL FOOTER */}
       <Footer />
     </div>
   );
 }
-
