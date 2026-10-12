@@ -24,12 +24,23 @@ This file is automatically loaded by AI agents working in this workspace.
    - 1,470 approved student emails are stored in Supabase `public.allowed_emails`.
    - Users sign in directly via Google OAuth / Magic Link on the portal at `https://www.qffsrmap2026.com/learning`.
 
-2. **Masterclass Learning Track:**
+2. **Fee Structure & Non-Misleading Copy (CRITICAL):**
+   - **Festival Access & Registration is 100% FREE:** Access to all workshops, lectures, quizzes, creative competitions, and hackathon tracks requires zero payment.
+   - **₹99 Fee is Exclusively for Certificates:** The nominal ₹99 charge is solely an optional administrative fee for minting a cryptographically verified completion certificate upon finishing all 5 masterclasses and quizzes.
+   - **Never refer to ₹99 as a "Registration Fee" or "Online Course Fee".** Always label it as "Optional Verified Certificate Fee".
+   - **FAQ #14 Integrity:** FAQ 14 is dedicated to Day 2/3 Poster & Essay submissions. Never override FAQ 14 with payment or fee blocks (fee cards belong under FAQ 17).
+
+3. **Hackathon Team Size Standards:**
+   - **Strict Team Size: 2 to 6 members** (1 Team Leader + 1 to 5 Teammates).
+   - **Solo Participation is Prohibited:** Backend validation strictly rejects solo teams. Teams must have at least 1 invited teammate accept before the roster can be finalized.
+   - Legacy mentions of `1–4 members` in schedules or docs are deprecated and must never be reintroduced.
+
+4. **Masterclass Learning Track:**
    - 5 active curriculum sessions (`session-1`, `session-3`, `session-4`, `session-5`, `session-6`) with video lectures and concept check quizzes.
    - 3 creative tracks (Digital Poster, Reels, Technical Essay) submitted at `https://www.qffsrmap2026.com/learning`.
 
-3. **Hackathon & Coding Challenges:**
-   - Hackathon Phase 1 team submissions and repo registration: accessed via `https://www.qffsrmap2026.com/learning`.
+5. **Hackathon & Coding Challenges:**
+   - Hackathon Phase 1 team submissions and repo registration: accessed via `https://www.qffsrmap2026.com/learning/hackathon`.
    - 9 Qiskit browser-based coding challenges (P1 to P9) open until October 15, 2026.
 
 ---
@@ -39,7 +50,7 @@ This file is automatically loaded by AI agents working in this workspace.
 - **Zero Decorative Emojis** in UI buttons, status badges, headers, or git commits.
 - **Clean light-theme default** (`#ffffff` / `#f8fafc`, `#e2e8f0` borders, `#0f172a` text).
 - **Concise, direct tone** without AI cheerleading or filler words.
-- Consult `PROJECT_LEARNINGS.md` for complete ground truths (GT-01 through GT-22).
+- Consult `PROJECT_LEARNINGS.md` for complete ground truths (GT-01 through GT-25).
 
 ---
 
