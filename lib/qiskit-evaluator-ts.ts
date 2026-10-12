@@ -4,7 +4,7 @@
  * Evaluates participant solutions for Problems P1 through P9.
  */
 
-import { QISKIT_CHALLENGES } from '@/data/qiskit/challenges';
+import { QISKIT_CHALLENGES } from '../data/qiskit/challenges.ts';
 
 export interface TestResultItem {
   test_type: 'public' | 'hidden';
@@ -296,6 +296,7 @@ export function transpilePythonToJS(pyCode: string): string {
     trimmed = trimmed
       .replace(/\[::-1\]/g, '.split("").reverse().join("")')
       .replace(/\.append\(/g, '.push(')
+      .replace(/\b(qc|circuit|state_prep)\.push\(/g, '$1.append(')
       .replace(/\.lower\(\)/g, '.toLowerCase()')
       .replace(/\.upper\(\)/g, '.toUpperCase()')
       .replace(/\.strip\(\)/g, '.trim()')

@@ -8,6 +8,8 @@
     "build": "NODE_ENV=production next build",
     "start": "next start",
     "lint": "eslint .",
+    "test": "node --experimental-strip-types --test tests/local-test-auth-policy.test.mjs tests/auth-security.test.mjs tests/qiskit-auth-flow.test.mjs tests/env-validator.test.mjs tests/rate-limit-ip.test.mjs",
+    "test:local-auth": "node --experimental-strip-types --test tests/local-test-auth-policy.test.mjs tests/auth-security.test.mjs tests/qiskit-auth-flow.test.mjs tests/env-validator.test.mjs tests/rate-limit-ip.test.mjs",
     "clean": "node -e \"fs.rmSync('.next', {recursive: true, force: true})\""
   },
   "dependencies": {
