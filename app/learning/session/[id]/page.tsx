@@ -809,7 +809,9 @@ export default function SessionPlayerPage() {
                       >
                         <span className="flex items-center gap-2">
                           <FileText className="w-4 h-4 text-burgundy dark:text-[#E89BA5]" />
-                          Tutorial Code & Notebooks
+                          {session.slidesUrl.toLowerCase().includes('.pdf')
+                            ? 'Presentation Slides & Talk Notes (.pdf)'
+                            : 'Tutorial Code & Notebooks'}
                         </span>
                         <ExternalLink className="w-3 h-3 text-slate-400" />
                       </a>

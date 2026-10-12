@@ -229,6 +229,8 @@ export const CURRICULUM_SESSIONS: LectureSession[] = [
       'NIST Post-Quantum Cryptography standards: FIPS 203 (ML-KEM / Kyber), FIPS 204 (ML-DSA / Dilithium), FIPS 205 (SLH-DSA / SPHINCS+), and CNSA 2.0 migration',
       'Official Hackathon Launch: Algorithm-Architecture Co-Design, Processors A/B/C/D, 5 tracks, and 100-point evaluation rubric',
     ],
+    slidesUrl:
+      'https://jpciyrodeppqpkwqblpk.supabase.co/storage/v1/object/public/media/session-materials/session-6/Quantum_Cybersecurity_Cryptography.pdf',
   },
 ];
 
