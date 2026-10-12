@@ -35,9 +35,12 @@ This file is automatically loaded by AI agents working in this workspace.
    - **Solo Participation is Prohibited:** Backend validation strictly rejects solo teams. Teams must have at least 1 invited teammate accept before the roster can be finalized.
    - Legacy mentions of `1–4 members` in schedules or docs are deprecated and must never be reintroduced.
 
-4. **Masterclass Learning Track:**
+4. **Masterclass Learning Track & Session Materials:**
    - 5 active curriculum sessions (`session-1`, `session-3`, `session-4`, `session-5`, `session-6`) with video lectures and concept check quizzes.
    - 3 creative tracks (Digital Poster, Reels, Technical Essay) submitted at `https://www.qffsrmap2026.com/learning`.
+   - **Session 6 Architecture & Sole Speaker Integrity:** Session 6 is delivered exclusively by **Dr. Sazzad Ali Biswas** as the sole speaker (`coSpeakers: []`).
+   - **Official Slide Decks & Storage Scope:** Presentation decks are hosted directly via Supabase Storage bucket `media` under `session-materials/{session-id}/{filename}.pdf` (backed by RLS migration `20261012111500_allow_session_materials_uploads_in_media_bucket.sql`).
+   - **Don Norman Information Architecture:** The official PDF deck is surfaced as a prominent hero action card immediately beneath the session description on `/learning/session/session-6`, with transcript accordions collapsed by default to eliminate cognitive clutter while preserving on-demand expandability.
 
 5. **Hackathon & Coding Challenges:**
    - Hackathon Phase 1 team submissions and repo registration: accessed via `https://www.qffsrmap2026.com/learning/hackathon`.
