@@ -6,13 +6,11 @@ import {
   dispatchJudgeEvaluation,
 } from '@/lib/qiskit-judge';
 import { QISKIT_CHALLENGES } from '@/data/qiskit/challenges';
-import { isLocalTestAuthRequest } from '@/lib/local-test-auth';
 
 export async function POST(req: NextRequest) {
   try {
     // 1. Authenticate user
     const session = await getServerSession();
-    const isLocalTest = await isLocalTestAuthRequest();
     if (!session || !session.email) {
       return NextResponse.json(
         { success: false, error: 'Authentication required. Please sign in to run code.' },
@@ -21,9 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Server-authoritative competition window check
-    const statusCheck: { allowed: boolean; reason?: string } = isLocalTest
-      ? { allowed: true }
-      : await checkCompetitionStatus();
+    const statusCheck = await checkCompetitionStatus();
     if (!statusCheck.allowed && !session.isAdmin) {
       return NextResponse.json(
         { success: false, error: statusCheck.reason },

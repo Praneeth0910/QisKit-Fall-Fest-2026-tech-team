@@ -6,9 +6,8 @@ into the judge's submission box for each problem.
 """
 
 import numpy as np
-from qiskit import ClassicalRegister, QuantumCircuit
+from qiskit import QuantumCircuit
 from qiskit.circuit import Parameter
-from qiskit.compiler import transpile
 from qiskit.quantum_info import Statevector, state_fidelity, Operator
 
 
@@ -362,9 +361,6 @@ def pauli_measurement_circuit(state_prep: QuantumCircuit, pauli: str) -> Quantum
 
 
 def expectation_from_counts(counts: dict, pauli: str) -> float:
-    if all(p == 'I' for p in pauli):
-        return 1.0
-
     total = sum(counts.values())
     if total == 0:
         return 0.0
@@ -395,7 +391,7 @@ def expectation_from_counts(counts: dict, pauli: str) -> float:
 # Handle repeated parameters by accumulating contributions.
 # values is a list aligned with circuit.parameters (sorted by name).
 # ─────────────────────────────────────────────────────────────────────────────
-def _param_shift_gradient_legacy(circuit: QuantumCircuit, values: list, evaluator) -> list:
+def param_shift_gradient(circuit: QuantumCircuit, values: list, evaluator) -> list:
     # circuit.parameters returns a ParameterView sorted by name — aligned with values
     params = list(circuit.parameters)
     param_to_value = {p: float(v) for p, v in zip(params, values)}
@@ -486,44 +482,6 @@ def _param_shift_gradient_legacy(circuit: QuantumCircuit, values: list, evaluato
         grad.append(grad_k)
 
     return grad
-
-
-def param_shift_gradient(circuit: QuantumCircuit, values: list, evaluator) -> list:
-    params = list(circuit.parameters)
-    if len(values) != len(params):
-        raise ValueError("values must match circuit.parameters")
-    value_map = {p: float(v) for p, v in zip(params, values)}
-    shift = np.pi / 2
-    bound = circuit.assign_parameters(value_map, inplace=False)
-    gradients = []
-
-    for param in params:
-        gradient = 0.0
-        for gate_index, instruction in enumerate(circuit.data):
-            for angle_index, angle in enumerate(instruction.operation.params):
-                if not hasattr(angle, 'parameters') or param not in angle.parameters:
-                    continue
-
-                coefficient = float(angle.gradient(param))
-                angle_value = float(
-                    angle.bind({p: value_map[p] for p in angle.parameters})
-                )
-                plus = bound.copy()
-                minus = bound.copy()
-                plus_op = plus.data[gate_index].operation.copy()
-                minus_op = minus.data[gate_index].operation.copy()
-                plus_params = list(plus_op.params)
-                minus_params = list(minus_op.params)
-                plus_params[angle_index] = angle_value + shift
-                minus_params[angle_index] = angle_value - shift
-                plus_op.params = plus_params
-                minus_op.params = minus_params
-                plus.data[gate_index] = plus.data[gate_index].replace(operation=plus_op)
-                minus.data[gate_index] = minus.data[gate_index].replace(operation=minus_op)
-                gradient += coefficient * (evaluator(plus) - evaluator(minus)) / 2.0
-        gradients.append(gradient)
-
-    return gradients
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -736,9 +694,6 @@ def zne_expectation(circuit: QuantumCircuit, z_mask: str, noisy_runner, shots: i
         return folded
 
     def counts_to_expectation(counts: dict) -> float:
-        if all(p == 'I' for p in z_mask):
-            return 1.0
-
         total = sum(counts.values())
         if total == 0:
             return 0.0
@@ -753,7 +708,7 @@ def zne_expectation(circuit: QuantumCircuit, z_mask: str, noisy_runner, shots: i
 
     def build_measurement_circuit(base_qc) -> QuantumCircuit:
         meas_qc = base_qc.copy()
-        meas_qc.add_register(ClassicalRegister(n))
+        meas_qc.add_register(__import__('qiskit').ClassicalRegister(n))
         for i in range(n):
             meas_qc.measure(i, i)
         return meas_qc

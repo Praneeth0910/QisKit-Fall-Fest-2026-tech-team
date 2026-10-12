@@ -3,13 +3,10 @@ import { getServerSession } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { fallbackSubmissions } from '@/lib/qiskit-judge';
 import { redis } from '@/lib/redis';
-import { isLocalTestAuthRequest } from '@/lib/local-test-auth';
-import { listLocalTestSubmissions } from '@/lib/local-test-store';
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession();
-    const isLocalTest = await isLocalTestAuthRequest();
     if (!session || !session.email) {
       return NextResponse.json(
         { success: false, error: 'Authentication required.' },
@@ -22,20 +19,6 @@ export async function GET(req: NextRequest) {
     const userEmail = session.email.toLowerCase().trim();
 
     const submissionsMap = new Map<string, any>();
-
-    if (isLocalTest) {
-      for (const s of await listLocalTestSubmissions()) {
-        if (s.user_email === userEmail && (!problemId || s.challenge_id === problemId)) {
-          submissionsMap.set(s.id, {
-            id: s.id, challengeId: s.challenge_id, status: s.status, score: s.score,
-            maxScore: s.max_score, passedTests: s.passed_tests, totalTests: s.total_tests,
-            executionTimeMs: s.execution_time_ms, submittedAt: s.submitted_at,
-            errorMessage: s.error_message,
-          });
-        }
-      }
-      return NextResponse.json({ success: true, submissions: Array.from(submissionsMap.values()), localTestMode: true });
-    }
 
     // 1. Fetch from Supabase if table exists
     try {

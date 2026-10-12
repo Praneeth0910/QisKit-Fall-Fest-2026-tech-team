@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '../types/supabase.ts';
+import { Database } from '@/types/supabase';
 
 const supabaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jpciyrodeppqpkwqblpk.supabase.co';
@@ -10,7 +10,7 @@ const supabaseServiceRoleKey =
 
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   console.warn(
-    '[Supabase Admin] Notice: SUPABASE_SERVICE_ROLE_KEY is not configured. Falling back to public key.'
+    '[Supabase] Warning: SUPABASE_SERVICE_ROLE_KEY is missing. Using anon key fallback for database access.'
   );
 }
 
@@ -24,3 +24,4 @@ export const supabaseAdmin = createClient(
     },
   }
 );
+

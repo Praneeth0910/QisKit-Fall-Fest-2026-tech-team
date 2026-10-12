@@ -4,16 +4,13 @@ import {
   checkCompetitionStatus,
   checkRateLimit,
   createAsyncSubmission,
-  createLocalTestSubmission,
 } from '@/lib/qiskit-judge';
 import { QISKIT_CHALLENGES } from '@/data/qiskit/challenges';
-import { isLocalTestAuthRequest } from '@/lib/local-test-auth';
 
 export async function POST(req: NextRequest) {
   try {
     // 1. Authenticate user
     const session = await getServerSession();
-    const isLocalTest = await isLocalTestAuthRequest();
     if (!session || !session.email) {
       return NextResponse.json(
         { success: false, error: 'Authentication required. Please sign in to submit.' },
@@ -22,9 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Server-authoritative competition window check
-    const statusCheck: { allowed: boolean; reason?: string } = isLocalTest
-      ? { allowed: true }
-      : await checkCompetitionStatus();
+    const statusCheck = await checkCompetitionStatus();
     if (!statusCheck.allowed && !session.isAdmin) {
       return NextResponse.json(
         { success: false, error: statusCheck.reason },
@@ -67,9 +62,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Rate Limiting / Submission limit check
-    const rateLimit = isLocalTest
-      ? { allowed: true, remaining: Number.POSITIVE_INFINITY }
-      : await checkRateLimit(session.email, 'submit', normProblemId);
+    const rateLimit = await checkRateLimit(session.email, 'submit', normProblemId);
     if (!rateLimit.allowed) {
       return NextResponse.json(
         { success: false, error: rateLimit.message },
@@ -78,9 +71,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 5. Asynchronous submission creation
-    const subResult = isLocalTest
-      ? await createLocalTestSubmission(session.email, normProblemId, code)
-      : await createAsyncSubmission(session.email, normProblemId, code);
+    const subResult = await createAsyncSubmission(session.email, normProblemId, code);
 
     if (!subResult.success) {
       return NextResponse.json(

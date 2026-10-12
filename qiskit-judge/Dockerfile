@@ -5,10 +5,7 @@ FROM python:3.11-slim
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/judge \
-    QISKIT_JUDGE_TIMEOUT_SECONDS=20 \
-    OMP_NUM_THREADS=1 \
-    OPENBLAS_NUM_THREADS=1
+    PYTHONPATH=/judge
 
 # Install system dependencies (build-essential, cmake for quantum numerical libraries if needed)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -40,8 +37,6 @@ RUN chown -R root:root /judge && \
 USER judgeuser
 
 EXPOSE 8000
-
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD curl --fail http://localhost:8000/health || exit 1
 
 # Default entrypoint starts the FastAPI judge evaluation service
 CMD ["uvicorn", "worker:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]

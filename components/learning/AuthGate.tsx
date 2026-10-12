@@ -46,7 +46,7 @@ export function AuthGate({ children, onSessionChange }: AuthGateProps) {
     }
   }
 
-  async function syncSessionWithBackend(email: string, fullName: string, accessToken?: string) {
+  async function syncSessionWithBackend(email: string, fullName: string) {
     if (isSyncingRef.current) return false;
     isSyncingRef.current = true;
 
@@ -57,22 +57,9 @@ export function AuthGate({ children, onSessionChange }: AuthGateProps) {
         body: JSON.stringify({
           email,
           fullName,
-          accessToken,
         }),
       });
-
-      const contentType = verifyRes.headers.get('content-type') || '';
-      let verifyData: any = {};
-      if (contentType.includes('application/json')) {
-        verifyData = await verifyRes.json();
-      } else {
-        throw new Error(
-          verifyRes.status >= 500
-            ? 'Authentication service is momentarily recovering. Please refresh in a moment.'
-            : `Authentication error (${verifyRes.status}). Please refresh and try again.`
-        );
-      }
-
+      const verifyData = await verifyRes.json();
       if (verifyRes.ok && verifyData.success) {
         notifyAuthChange(verifyData.session);
 
@@ -98,7 +85,7 @@ export function AuthGate({ children, onSessionChange }: AuthGateProps) {
         }
         return true;
       } else if (verifyRes.status === 403) {
-        // User is genuinely not whitelisted / not eligible
+        // User is not whitelisted / not eligible
         await supabase.auth.signOut();
         notifyAuthChange(null);
         setShowToast(true);
@@ -110,16 +97,14 @@ export function AuthGate({ children, onSessionChange }: AuthGateProps) {
       } else {
         await supabase.auth.signOut();
         notifyAuthChange(null);
-        setShowToast(false);
+        setShowToast(true);
         setErrorMessage(verifyData.error || 'Authentication failed. Please try again.');
         return false;
       }
     } catch (err: any) {
       console.error('Session sync error:', err);
-      setErrorMessage(
-        err?.message || 'Network error during authentication. Please refresh.'
-      );
-      setShowToast(false);
+      setErrorMessage(err?.message || 'Network error during authentication.');
+      setShowToast(true);
     } finally {
       isSyncingRef.current = false;
       setIsLoading(false);
@@ -183,7 +168,7 @@ export function AuthGate({ children, onSessionChange }: AuthGateProps) {
             sbSession.user.user_metadata?.name ||
             sbSession.user.user_metadata?.preferred_username ||
             '';
-          await syncSessionWithBackend(sbSession.user.email, fullName, sbSession.access_token);
+          await syncSessionWithBackend(sbSession.user.email, fullName);
         }
       } catch (err) {
         console.error('Session check error:', err);
@@ -223,7 +208,7 @@ export function AuthGate({ children, onSessionChange }: AuthGateProps) {
           sbSession.user.user_metadata?.name ||
           sbSession.user.user_metadata?.preferred_username ||
           '';
-        await syncSessionWithBackend(sbSession.user.email, fullName, sbSession.access_token);
+        await syncSessionWithBackend(sbSession.user.email, fullName);
       } else if (event === 'SIGNED_OUT') {
         if (isMounted) {
           notifyAuthChange(null);

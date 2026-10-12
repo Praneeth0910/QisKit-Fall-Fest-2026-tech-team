@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getSubmissionWithFallback } from '@/lib/qiskit-judge';
-import { isLocalTestAuthRequest } from '@/lib/local-test-auth';
-import { getLocalTestSubmission } from '@/lib/local-test-store';
 
 export async function GET(
   req: NextRequest,
@@ -14,7 +12,6 @@ export async function GET(
 
     // 1. Authenticate user
     const session = await getServerSession();
-    const isLocalTest = await isLocalTestAuthRequest();
     if (!session || !session.email) {
       return NextResponse.json(
         { success: false, error: 'Authentication required.' },
@@ -27,31 +24,6 @@ export async function GET(
         { success: false, error: 'Submission ID is required.' },
         { status: 400 }
       );
-    }
-
-    if (isLocalTest) {
-      const submission = await getLocalTestSubmission(submissionId);
-      if (!submission || submission.user_email !== session.email) {
-        return NextResponse.json({ success: false, error: 'Submission not found.' }, { status: 404 });
-      }
-      return NextResponse.json({
-        success: true,
-        submissionId: submission.id,
-        status: submission.status,
-        score: submission.score,
-        maxScore: submission.max_score,
-        passedTests: submission.passed_tests,
-        totalTests: submission.total_tests,
-        executionTimeMs: submission.execution_time_ms,
-        stdout: submission.stdout,
-        stderr: submission.stderr,
-        errorMessage: submission.error_message,
-        submittedAt: submission.submitted_at,
-        completedAt: submission.completed_at,
-        publicResults: submission.public_results,
-        hiddenResults: submission.hidden_results,
-        localTestMode: true,
-      });
     }
 
     // 2. Fetch submission record (Supabase with memory/redis fallback)
