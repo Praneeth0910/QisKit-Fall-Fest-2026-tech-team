@@ -240,6 +240,42 @@ export async function POST(request: NextRequest) {
       // Invalidate cache-aside progress cache
       await invalidateUserProgressCache(normalizedEmail);
 
+      // Build safe reviews based on passing status:
+      // - If student passed (now or previously), reveal full answer keys and explanations.
+      // - If student got a question right, provide explanation to reinforce learning.
+      // - If student got a question wrong AND has not yet passed, withhold the answer key so they must review course material before retrying.
+      const reviews: Record<
+        string,
+        {
+          correctIndex?: number;
+          correctOptionText?: string;
+          explanation?: string;
+          hint?: string;
+        }
+      > = {};
+
+      quiz.questions.forEach((q) => {
+        const isCorrect = Boolean(questionResults[q.id]);
+        const cIdx = typeof q.correctIndex === 'number' ? q.correctIndex : 0;
+        if (finalPassed) {
+          reviews[q.id] = {
+            correctIndex: cIdx,
+            correctOptionText: q.options[cIdx] || '',
+            explanation: q.explanation || '',
+          };
+        } else if (isCorrect) {
+          reviews[q.id] = {
+            correctIndex: cIdx,
+            correctOptionText: q.options[cIdx] || '',
+            explanation: q.explanation || '',
+          };
+        } else {
+          reviews[q.id] = {
+            hint: 'Review the lecture transcript and session slides to locate this concept.',
+          };
+        }
+      });
+
       return NextResponse.json({
         success: true,
         scorePercent,
@@ -248,6 +284,7 @@ export async function POST(request: NextRequest) {
         correctCount,
         totalQuestions: quiz.questions.length,
         questionResults,
+        reviews,
         attempts: nextAttempts,
         data,
       });

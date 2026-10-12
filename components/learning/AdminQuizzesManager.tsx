@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuizzes } from '@/hooks/use-quizzes';
 import { CURRICULUM_SESSIONS } from '@/data/learning/curriculum';
-import { SESSION_QUIZZES } from '@/data/learning/quizzes';
 import { SessionQuiz, QuizQuestion } from '@/data/learning/types';
 import {
   Award,
@@ -56,8 +55,7 @@ export function AdminQuizzesManager() {
 
   // Sync form when selected session or quizzes change
   useEffect(() => {
-    const base = SESSION_QUIZZES[selectedSessionId];
-    const currentQuiz = quizzes[selectedSessionId] || base;
+    const currentQuiz = quizzes[selectedSessionId];
 
     if (currentQuiz) {
       setFormData({
@@ -71,7 +69,6 @@ export function AdminQuizzesManager() {
   }, [selectedSessionId, quizzes]);
 
   const currentSessionMeta = CURRICULUM_SESSIONS.find((s) => s.id === selectedSessionId);
-  const currentBase = SESSION_QUIZZES[selectedSessionId];
   const currentOverride = overrides[selectedSessionId] || null;
   const isCustomized = Boolean(currentOverride);
 
@@ -151,7 +148,11 @@ export function AdminQuizzesManager() {
         setStatusIsError(true);
         return;
       }
-      if (q.correctIndex < 0 || q.correctIndex >= q.options.length) {
+      if (
+        typeof q.correctIndex !== 'number' ||
+        q.correctIndex < 0 ||
+        q.correctIndex >= q.options.length
+      ) {
         setStatusMsg(`Question #${i + 1} does not have a valid correct answer choice.`);
         setStatusIsError(true);
         return;
@@ -323,7 +324,7 @@ export function AdminQuizzesManager() {
     setFormData((prev) => {
       const updatedQuestions = [...prev.questions];
       const currentOptions = updatedQuestions[qIndex].options;
-      const currentCorrect = updatedQuestions[qIndex].correctIndex;
+      const currentCorrect = updatedQuestions[qIndex].correctIndex ?? 0;
 
       const newOptions = currentOptions.filter((_, i) => i !== optIndex);
       let newCorrect = currentCorrect;
@@ -343,9 +344,9 @@ export function AdminQuizzesManager() {
   }
 
   // Count metrics
-  const totalQuizzes = Object.keys(SESSION_QUIZZES).length;
+  const totalQuizzes = Object.keys(quizzes).length || CURRICULUM_SESSIONS.length;
   const lockedCount = Object.values(quizzes).filter((q) => q.isLocked).length;
-  const unlockedCount = totalQuizzes - lockedCount;
+  const unlockedCount = Math.max(0, totalQuizzes - lockedCount);
   const customizedCount = Object.keys(overrides).length;
 
   return (
@@ -416,7 +417,7 @@ export function AdminQuizzesManager() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
         {CURRICULUM_SESSIONS.map((s) => {
           const isSelected = s.id === selectedSessionId;
-          const sQuiz = quizzes[s.id] || SESSION_QUIZZES[s.id];
+          const sQuiz = quizzes[s.id];
           const isSessLocked = Boolean(sQuiz?.isLocked);
           const hasOverride = Boolean(overrides[s.id]);
 

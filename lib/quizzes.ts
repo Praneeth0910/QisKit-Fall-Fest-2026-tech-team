@@ -72,8 +72,37 @@ export async function getQuizOverrides(): Promise<Record<string, Partial<Session
 }
 
 /**
+ * Strips sensitive evaluation fields (correctIndex, explanation, administrative audit metadata)
+ * from quiz objects before transmission to student clients.
+ */
+export function sanitizeQuizForStudent(quiz: SessionQuiz): SessionQuiz {
+  if (quiz.isLocked) {
+    return {
+      sessionId: quiz.sessionId,
+      title: quiz.title,
+      passingScore: quiz.passingScore,
+      isLocked: true,
+      questions: [],
+    };
+  }
+
+  return {
+    sessionId: quiz.sessionId,
+    title: quiz.title,
+    passingScore: quiz.passingScore,
+    isLocked: false,
+    questions: (quiz.questions || []).map((q) => ({
+      id: q.id,
+      question: q.question,
+      options: q.options,
+    })),
+  };
+}
+
+/**
  * Retrieves all quizzes merged with dynamic overrides.
- * If admin is false (student view), questions are sanitized to [] when isLocked is true.
+ * If admin is false (student view), questions are sanitized (correctIndex and explanation stripped),
+ * locked quizzes have questions set to [], and overrides are omitted.
  */
 export async function getAllQuizzes(options?: {
   admin?: boolean;
@@ -87,13 +116,10 @@ export async function getAllQuizzes(options?: {
   // 1. Process all known default quizzes
   for (const [sId, baseQuiz] of Object.entries(SESSION_QUIZZES)) {
     const quiz = mergeQuizWithOverride(baseQuiz, overrides[sId]);
-    if (!options?.admin && quiz.isLocked) {
-      merged[sId] = {
-        ...quiz,
-        questions: [], // Ensure questions are not leaked when locked
-      };
-    } else {
+    if (options?.admin) {
       merged[sId] = quiz;
+    } else {
+      merged[sId] = sanitizeQuizForStudent(quiz);
     }
   }
 
@@ -110,18 +136,18 @@ export async function getAllQuizzes(options?: {
         updatedBy: override.updatedBy,
       };
 
-      if (!options?.admin && customQuiz.isLocked) {
-        merged[sId] = {
-          ...customQuiz,
-          questions: [],
-        };
-      } else {
+      if (options?.admin) {
         merged[sId] = customQuiz;
+      } else {
+        merged[sId] = sanitizeQuizForStudent(customQuiz);
       }
     }
   }
 
-  return { quizzes: merged, overrides };
+  return {
+    quizzes: merged,
+    overrides: options?.admin ? overrides : {},
+  };
 }
 
 /**

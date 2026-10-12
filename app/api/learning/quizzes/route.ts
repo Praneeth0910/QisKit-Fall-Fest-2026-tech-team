@@ -16,16 +16,27 @@ export async function GET(request: NextRequest) {
     const sessionId = searchParams.get('sessionId') || searchParams.get('id');
     const wantAdmin = searchParams.get('admin') === 'true';
 
-    // Verify admin privileges if requesting admin-level view (which reveals questions for locked quizzes)
+    // Verify session - anonymous users cannot query curriculum quizzes
     const session = await getServerSession();
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Please sign in to access learning quizzes.' },
+        { status: 401 }
+      );
+    }
+
+    // Verify admin privileges if requesting admin-level view (which reveals answer keys and overrides)
     const isAdmin = Boolean(session?.isAdmin);
     const allowAdminView = wantAdmin && isAdmin;
 
     const { quizzes, overrides } = await getAllQuizzes({ admin: allowAdminView });
 
-    const cacheHeaders = allowAdminView
-      ? { 'Cache-Control': 'no-store' }
-      : { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' };
+    const cacheHeaders = {
+      'Cache-Control': allowAdminView
+        ? 'no-store, no-cache, must-revalidate'
+        : 'private, no-cache, no-store, must-revalidate',
+      Pragma: 'no-cache',
+    };
 
     if (sessionId) {
       const quiz = quizzes[sessionId];
@@ -37,7 +48,7 @@ export async function GET(request: NextRequest) {
         {
           success: true,
           quiz,
-          override: overrides[sessionId] || null,
+          override: allowAdminView ? overrides[sessionId] || null : null,
           isLocked: Boolean(quiz.isLocked),
         },
         { headers: cacheHeaders }
@@ -48,7 +59,7 @@ export async function GET(request: NextRequest) {
       {
         success: true,
         quizzes,
-        overrides,
+        overrides: allowAdminView ? overrides : {},
       },
       { headers: cacheHeaders }
     );

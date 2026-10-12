@@ -42,6 +42,15 @@ export default function DedicatedQuizPage() {
     correctCount: number;
     totalQuestions: number;
     questionResults: Record<string, boolean>;
+    reviews?: Record<
+      string,
+      {
+        correctIndex?: number;
+        correctOptionText?: string;
+        explanation?: string;
+        hint?: string;
+      }
+    >;
   } | null>(null);
 
   // Fetch current quiz attempts count from API and local cache
@@ -242,6 +251,7 @@ export default function DedicatedQuizPage() {
           correctCount: data.correctCount,
           totalQuestions: data.totalQuestions,
           questionResults: data.questionResults,
+          reviews: data.reviews,
         });
 
         // Redirect / smooth scroll to top immediately so user sees their score & attempt stats
@@ -423,6 +433,11 @@ export default function DedicatedQuizPage() {
                     {(quiz.questions || []).map((q, idx) => {
                       const isCorrect = results.questionResults?.[q.id];
                       const userChoice = selectedAnswers[q.id];
+                      const review = results.reviews?.[q.id];
+                      const correctText =
+                        review?.correctOptionText ||
+                        (review?.correctIndex !== undefined ? q.options?.[review.correctIndex] : null);
+
                       return (
                         <div
                           key={q.id}
@@ -449,17 +464,22 @@ export default function DedicatedQuizPage() {
                               <span className="text-slate-500">Your Answer:</span>{' '}
                               {q.options?.[userChoice] || 'None'}
                             </p>
-                            {!isCorrect && (
+                            {!isCorrect && correctText && (
                               <p className="text-emerald-700 dark:text-emerald-400 font-medium">
-                                <span>Correct Answer:</span> {q.options?.[q.correctIndex]}
+                                <span>Correct Answer:</span> {correctText}
+                              </p>
+                            )}
+                            {!isCorrect && !correctText && (
+                              <p className="text-amber-700 dark:text-amber-400 font-medium italic">
+                                {review?.hint || 'Review the lecture transcript and session slides to locate this concept.'}
                               </p>
                             )}
                           </div>
 
-                          {q.explanation && (
+                          {review?.explanation && (
                             <div className="text-xs bg-slate-100/70 dark:bg-[#1C0A0D] p-2.5 rounded text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-[#3D1418]">
                               <span className="font-semibold text-slate-800 dark:text-[#FAF6F3]">Explanation:</span>{' '}
-                              {q.explanation}
+                              {review.explanation}
                             </div>
                           )}
                         </div>
