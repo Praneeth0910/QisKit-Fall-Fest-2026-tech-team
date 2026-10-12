@@ -143,6 +143,8 @@ export const CURRICULUM_SESSIONS: LectureSession[] = [
       'Session 4B: Photonic degrees of freedom (OAM infinite Hilbert space), 3-waveplate SU(2) polarization unitaries, 1550 nm telecom propagation, and SPDC in χ^(2) PPKTP/BBO crystals',
       'Hanbury Brown–Twiss g^(2)(0) = 0 anti-bunching, Type-I vs. Type-II entangled SPDC rings, Bell’s inequality (S ≤ 2√2), 6-beam laser cooling, SNSPD/SPAD detectors, Quantum Teleportation, and Quirk/QuVis simulation',
     ],
+    slidesUrl:
+      'https://jpciyrodeppqpkwqblpk.supabase.co/storage/v1/object/public/media/session-materials/session-4/Quantum_Photonic_Technologies.pdf',
   },
   {
     id: 'session-5',
@@ -378,8 +380,8 @@ export const ONLINE_PROGRAMME_SCHEDULE: DayProgramme[] = [
         time: '14:45 - 16:20',
         duration: '95 min',
         title: 'Session 4B: Quantum Photonics, SPDC, Entangled Photons & Quirk/QuVis Live Simulation',
-        speaker: 'Dr. Gangi Reddy Salla & Gyanendra',
-        speakerRole: 'Associate Professor & Technical Team Lead, SRM University-AP',
+        speaker: 'Dr. Gangi Reddy Salla',
+        speakerRole: 'Associate Professor & Founder of Quantum Optics Lab, SRM University-AP',
         type: 'session',
         sessionId: 'session-4',
       },

@@ -71,8 +71,8 @@ export default function SessionPlayerPage() {
     if (SESSION_TRANSCRIPTS[sessionId]?.sections) {
       const initialExpanded: Record<string, boolean> = {};
       SESSION_TRANSCRIPTS[sessionId].sections.forEach((sec) => {
-        // Start collapsed for session-6 to avoid visual clutter since the PDF contains the primary mathematical material
-        initialExpanded[sec.id] = sessionId !== 'session-6';
+        // Start collapsed for session-4 & session-6 to avoid visual clutter since the PDF contains the primary lecture material
+        initialExpanded[sec.id] = sessionId !== 'session-6' && sessionId !== 'session-4';
       });
       setExpandedSections(initialExpanded);
     }
@@ -467,10 +467,14 @@ export default function SessionPlayerPage() {
                         )}
                       </div>
                       <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-[#FAF6F3] truncate">
-                        {session.speaker.name} — Presentation Slides & Lecture Notes
+                        {sessionId === 'session-4'
+                          ? 'Dr. Gangi Reddy Salla & Prof. Durga B. Rao Dasari — Quantum Photonics & Optics Slides'
+                          : `${session.speaker.name} — Presentation Slides & Lecture Notes`}
                       </h3>
                       <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400">
-                        {sessionId === 'session-6'
+                        {sessionId === 'session-4'
+                          ? 'Authoritative lecture slide deck on Quantum Photonic Technologies, SPDC, single-photon states, and quantum optics.'
+                          : sessionId === 'session-6'
                           ? 'Complete mathematical proofs, RSA calculations, and quantum cryptography slide material.'
                           : 'Official slides and companion learning materials for this session.'}
                       </p>
@@ -575,6 +579,11 @@ export default function SessionPlayerPage() {
                     {sessionId === 'session-6' && (
                       <div className="p-3 rounded-lg bg-burgundy/5 dark:bg-burgundy/15 border border-burgundy/15 text-[11px] text-slate-700 dark:text-slate-300">
                         <strong className="font-semibold text-slate-900 dark:text-[#FAF6F3]">Recommended:</strong> Complete mathematical definitions, modular arithmetic proofs, and quantum algorithm slides are detailed in Dr. Biswas&apos;s presentation deck above. The transcript sections below are collapsed by default as an optional lecture reference.
+                      </div>
+                    )}
+                    {sessionId === 'session-4' && (
+                      <div className="p-3 rounded-lg bg-burgundy/5 dark:bg-burgundy/15 border border-burgundy/15 text-[11px] text-slate-700 dark:text-slate-300">
+                        <strong className="font-semibold text-slate-900 dark:text-[#FAF6F3]">Recommended:</strong> Complete photonic principles, SPDC diagrams, and quantum optics formulas are detailed in Dr. Gangi Reddy Salla&apos;s official presentation deck above. The transcript sections below are collapsed by default as an optional lecture reference.
                       </div>
                     )}
                   </div>
