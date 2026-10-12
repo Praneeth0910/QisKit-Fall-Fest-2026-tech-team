@@ -28,6 +28,7 @@ export function OAuthRedirectHandler() {
             body: JSON.stringify({
               email: session.user.email,
               fullName: session.user.user_metadata?.full_name || '',
+              accessToken: session.access_token,
             }),
           });
 
@@ -75,6 +76,7 @@ export function OAuthRedirectHandler() {
           body: JSON.stringify({
             email: session.user.email,
             fullName: session.user.user_metadata?.full_name || '',
+            accessToken: session.access_token,
           }),
         });
 

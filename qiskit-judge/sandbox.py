@@ -148,3 +148,15 @@ def set_sandbox_limits(max_memory_mb: int = 512, max_cpu_seconds: int = 15):
         resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     except Exception:
         pass
+
+    for limit_name, value in (
+        ("RLIMIT_NPROC", 32),
+        ("RLIMIT_NOFILE", 256),
+        ("RLIMIT_FSIZE", 2 * 1024 * 1024),
+    ):
+        limit = getattr(resource, limit_name, None)
+        if limit is not None:
+            try:
+                resource.setrlimit(limit, (value, value))
+            except Exception:
+                pass

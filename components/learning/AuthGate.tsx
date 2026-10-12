@@ -46,7 +46,7 @@ export function AuthGate({ children, onSessionChange }: AuthGateProps) {
     }
   }
 
-  async function syncSessionWithBackend(email: string, fullName: string) {
+  async function syncSessionWithBackend(email: string, fullName: string, accessToken?: string) {
     if (isSyncingRef.current) return false;
     isSyncingRef.current = true;
 
@@ -57,6 +57,7 @@ export function AuthGate({ children, onSessionChange }: AuthGateProps) {
         body: JSON.stringify({
           email,
           fullName,
+          accessToken,
         }),
       });
       const verifyData = await verifyRes.json();
@@ -168,7 +169,7 @@ export function AuthGate({ children, onSessionChange }: AuthGateProps) {
             sbSession.user.user_metadata?.name ||
             sbSession.user.user_metadata?.preferred_username ||
             '';
-          await syncSessionWithBackend(sbSession.user.email, fullName);
+          await syncSessionWithBackend(sbSession.user.email, fullName, sbSession.access_token);
         }
       } catch (err) {
         console.error('Session check error:', err);
@@ -208,7 +209,7 @@ export function AuthGate({ children, onSessionChange }: AuthGateProps) {
           sbSession.user.user_metadata?.name ||
           sbSession.user.user_metadata?.preferred_username ||
           '';
-        await syncSessionWithBackend(sbSession.user.email, fullName);
+        await syncSessionWithBackend(sbSession.user.email, fullName, sbSession.access_token);
       } else if (event === 'SIGNED_OUT') {
         if (isMounted) {
           notifyAuthChange(null);

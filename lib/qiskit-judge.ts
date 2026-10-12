@@ -2,13 +2,16 @@ import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
-import { supabaseAdmin } from './supabase-admin';
-import { redis, cacheAside } from './redis';
-import { QISKIT_CHALLENGES } from '@/data/qiskit/challenges';
-import { evaluateProblemWithTypeScript } from './qiskit-evaluator-ts';
+import { supabaseAdmin } from './supabase-admin.ts';
+import { redis, cacheAside } from './redis.ts';
+import { QISKIT_CHALLENGES } from '../data/qiskit/challenges.ts';
+import { evaluateProblemWithTypeScript } from './qiskit-evaluator-ts.ts';
+import { localTestSubmissions, type LocalTestSubmission, saveLocalTestSubmission } from './local-test-store.ts';
+import { isProductionOrCloudEnvironment } from './local-test-auth-policy.ts';
 
 // In-memory & Redis fallback store for submissions when database tables are initializing
 export const fallbackSubmissions = new Map<string, any>();
+const MAX_JUDGE_OUTPUT_BYTES = 64 * 1024;
 
 
 export interface TestResultItem {
@@ -43,6 +46,68 @@ export interface CompetitionConfig {
   max_submissions_per_problem: number;
   run_rate_limit_per_min: number;
   duration_minutes: number;
+}
+
+function invalidJudgeResult(problemId: string, mode: 'run' | 'submit', message: string): JudgeEvaluationResult {
+  const challenge = QISKIT_CHALLENGES.find((item) => item.id === problemId);
+  return {
+    success: false,
+    mode,
+    score: 0,
+    max_score: challenge?.points || 0,
+    passed_tests: 0,
+    total_tests: 0,
+    execution_time_ms: 0,
+    stdout: '',
+    stderr: message,
+    error_message: message,
+    public_results: [],
+    hidden_results: [],
+  };
+}
+
+function validateJudgeResult(
+  problemId: string,
+  mode: 'run' | 'submit',
+  result: unknown
+): JudgeEvaluationResult {
+  const challenge = QISKIT_CHALLENGES.find((item) => item.id === problemId);
+  if (!challenge || !result || typeof result !== 'object') {
+    return invalidJudgeResult(problemId, mode, 'Judge returned an invalid result.');
+  }
+
+  const candidate = result as Partial<JudgeEvaluationResult>;
+  const validNumber = (value: unknown): value is number =>
+    typeof value === 'number' && Number.isFinite(value);
+  const publicResults = Array.isArray(candidate.public_results) ? candidate.public_results : null;
+  const hiddenResults = Array.isArray(candidate.hidden_results) ? candidate.hidden_results : null;
+  const score = candidate.score;
+  const passedTests = candidate.passed_tests;
+  const totalTests = candidate.total_tests;
+  if (
+    candidate.mode !== mode ||
+    candidate.max_score !== challenge.points ||
+    !validNumber(score) ||
+    score < 0 ||
+    score > challenge.points ||
+    !validNumber(passedTests) ||
+    !validNumber(totalTests) ||
+    !publicResults ||
+    !hiddenResults ||
+    passedTests < 0 ||
+    totalTests < 0 ||
+    passedTests > totalTests
+  ) {
+    return invalidJudgeResult(problemId, mode, 'Judge returned an invalid score result.');
+  }
+
+  return {
+    ...(candidate as JudgeEvaluationResult),
+    score: Math.floor(score),
+    max_score: challenge.points,
+    passed_tests: Math.floor(passedTests),
+    total_tests: Math.floor(totalTests),
+  };
 }
 
 const DEFAULT_CONFIG: CompetitionConfig = {
@@ -196,63 +261,91 @@ export async function dispatchJudgeEvaluation(
 
   // 1. Try remote judge service if configured
   if (judgeUrl) {
+    if (!judgeSecret?.trim()) {
+      console.error('[Judge Service] Shared secret QISKIT_JUDGE_SECRET is missing or empty.');
+      return invalidJudgeResult(
+        problemId,
+        mode,
+        'Judge authentication secret is not configured.'
+      );
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30000);
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 4000);
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${judgeSecret.trim()}`,
       };
-      if (judgeSecret) {
-        headers['Authorization'] = `Bearer ${judgeSecret}`;
-      }
 
       const res = await fetch(`${judgeUrl.replace(/\/+$/, '')}/evaluate`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          problem_id: problemId,
+          problemId,
           code: sourceCode,
           mode,
         }),
         signal: controller.signal,
       });
-      clearTimeout(timer);
 
       if (res.ok) {
-        return (await res.json()) as JudgeEvaluationResult;
+        return validateJudgeResult(problemId, mode, await res.json());
       }
+
+      const errorBody = await res.text();
+      console.warn(
+        '[Judge Service] Evaluation rejected:',
+        res.status,
+        errorBody.slice(0, 2000)
+      );
+
+      return invalidJudgeResult(
+        problemId,
+        mode,
+        `Judge rejected evaluation (HTTP ${res.status}).`
+      );
     } catch (err) {
-      console.warn('[Judge Service] Connection failed, attempting local/TS fallback:', err);
+      console.warn('[Judge Service] Connection failed:', err);
+      return invalidJudgeResult(problemId, mode, 'Judge service is unavailable.');
+    } finally {
+      clearTimeout(timer);
     }
   }
 
   // 2. Try local Python runner ONLY in non-serverless environments if explicitly enabled
   const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
-  const enableLocalPython = process.env.ENABLE_LOCAL_PYTHON_JUDGE !== 'false';
+  const enableLocalPython = process.env.ENABLE_LOCAL_PYTHON_JUDGE === 'true';
 
   if (!isServerless && enableLocalPython) {
     const runnerPath = path.join(process.cwd(), 'qiskit-judge', 'runner.py');
     if (fs.existsSync(runnerPath)) {
       try {
         const localRes = await executeLocalRunner(problemId, sourceCode, mode);
-        // If Python executed, its result (whether passed, failed, syntax error, or compile error) is authoritative!
-        const isInfrastructureFailure =
-          !localRes ||
-          localRes.error_message === 'JUDGE_INFRA_PYTHON_SPAWN_ERROR' ||
-          Boolean(localRes.stderr?.includes('ENOENT'));
-
-        if (!isInfrastructureFailure) {
-          return localRes;
-        }
-        console.warn('[Local Python Runner] Python runtime unavailable, falling back to TypeScript evaluator:', localRes?.stderr);
+        return validateJudgeResult(problemId, mode, localRes);
       } catch (err) {
-        console.warn('[Local Python Runner] Failed, falling back to TypeScript evaluator:', err);
+        console.warn('[Local Python Runner] Failed:', err);
+        return invalidJudgeResult(problemId, mode, 'Judge process is unavailable.');
       }
     }
   }
 
-  // 3. Ultra-Fast Built-in TypeScript Quantum Evaluator (Guaranteed to work on Vercel Serverless)
-  return evaluateProblemWithTypeScript(problemId, sourceCode, mode);
+  const isProd = isProductionOrCloudEnvironment();
+  if (process.env.ENABLE_TYPESCRIPT_JUDGE_FALLBACK === 'true' && !isProd) {
+    return validateJudgeResult(
+      problemId,
+      mode,
+      await evaluateProblemWithTypeScript(problemId, sourceCode, mode)
+    );
+  }
+
+  return invalidJudgeResult(
+    problemId,
+    mode,
+    isProd
+      ? 'No authoritative judge service is configured in production. Fallback evaluator is disabled.'
+      : 'No authoritative judge is configured.'
+  );
 }
 
 function getPythonExecutable(): string {
@@ -291,6 +384,7 @@ function executeLocalRunner(
 
     let stdout = '';
     let stderr = '';
+    let outputBytes = 0;
     let timedOut = false;
     let resolved = false;
 
@@ -369,11 +463,35 @@ function executeLocalRunner(
     });
 
     py.stdout?.on('data', (d: Buffer | string) => {
-      stdout += d.toString();
+      const chunk = d.toString();
+      outputBytes += Buffer.byteLength(chunk);
+      if (outputBytes > MAX_JUDGE_OUTPUT_BYTES) {
+        try {
+          py.kill();
+        } catch {}
+        safeResolve({
+          ...invalidJudgeResult(problemId, mode, 'Judge output exceeded the maximum permitted size.'),
+          execution_time_ms: Date.now() - startTime,
+        });
+        return;
+      }
+      stdout += chunk;
     });
 
     py.stderr?.on('data', (d: Buffer | string) => {
-      stderr += d.toString();
+      const chunk = d.toString();
+      outputBytes += Buffer.byteLength(chunk);
+      if (outputBytes > MAX_JUDGE_OUTPUT_BYTES) {
+        try {
+          py.kill();
+        } catch {}
+        safeResolve({
+          ...invalidJudgeResult(problemId, mode, 'Judge output exceeded the maximum permitted size.'),
+          execution_time_ms: Date.now() - startTime,
+        });
+        return;
+      }
+      stderr += chunk;
     });
 
     py.on('close', () => {
@@ -428,48 +546,32 @@ export async function createAsyncSubmission(
       return { success: false, error: `Invalid problem ID: ${problemId}` };
     }
 
-    let challengePoints = staticChallenge.points;
-
-    try {
-      const { data: challenge } = await supabaseAdmin
-        .from('coding_challenges')
-        .select('id, points')
-        .eq('id', pid)
-        .single();
-      if (challenge) {
-        challengePoints = challenge.points;
-      }
-    } catch {
-      // Fallback to static challenge points
-    }
+    const challengePoints = staticChallenge.points;
 
     let submissionId = crypto.randomUUID();
 
-    // 2. Insert initial queued record in Supabase (if table exists)
-    try {
-      const { data: submission, error: subErr } = await supabaseAdmin
-        .from('coding_submissions')
-        .insert({
-          id: submissionId,
-          user_email: normEmail,
-          challenge_id: pid,
-          source_code: sourceCode,
-          status: 'queued',
-          score: 0,
-          max_score: challengePoints,
-          passed_tests: 0,
-          total_tests: 0,
-          execution_time_ms: 0,
-        })
-        .select('id')
-        .single();
+    // 2. Insert the authoritative queued record before acknowledging submission.
+    const { data: submission, error: subErr } = await supabaseAdmin
+      .from('coding_submissions')
+      .insert({
+        id: submissionId,
+        user_email: normEmail,
+        challenge_id: pid,
+        source_code: sourceCode,
+        status: 'queued',
+        score: 0,
+        max_score: challengePoints,
+        passed_tests: 0,
+        total_tests: 0,
+        execution_time_ms: 0,
+      })
+      .select('id')
+      .single();
 
-      if (!subErr && submission?.id) {
-        submissionId = submission.id;
-      }
-    } catch {
-      // Supabase table not migrated yet, use in-memory UUID
+    if (subErr || !submission?.id) {
+      return { success: false, error: 'Submission could not be persisted.' };
     }
+    submissionId = submission.id;
 
     // Save in in-memory fallback store
     fallbackSubmissions.set(submissionId, {
@@ -517,6 +619,66 @@ export async function createAsyncSubmission(
   }
 }
 
+export async function createLocalTestSubmission(
+  email: string,
+  problemId: string,
+  sourceCode: string
+): Promise<{ success: boolean; submissionId?: string; status?: string; error?: string }> {
+  const challenge = QISKIT_CHALLENGES.find((item) => item.id === problemId);
+  if (!challenge) {
+    return { success: false, error: `Invalid problem ID: ${problemId}` };
+  }
+
+  const submissionId = crypto.randomUUID();
+  const submission: LocalTestSubmission = {
+    id: submissionId,
+    user_email: email,
+    challenge_id: problemId,
+    source_code: sourceCode,
+    status: 'queued',
+    score: 0,
+    max_score: challenge.points,
+    passed_tests: 0,
+    total_tests: 0,
+    execution_time_ms: 0,
+    submitted_at: new Date().toISOString(),
+    completed_at: null,
+    error_message: null,
+    stdout: '',
+    stderr: '',
+    public_results: [],
+    hidden_results: [],
+  };
+  localTestSubmissions.set(submissionId, submission);
+  await saveLocalTestSubmission(submission);
+
+  void (async () => {
+    submission.status = 'running';
+    const result = await dispatchJudgeEvaluation(problemId, sourceCode, 'submit');
+    submission.status = result.success
+      ? 'completed'
+      : result.error_message?.includes('timed out') ? 'timeout' : 'failed';
+    submission.score = result.score;
+    submission.passed_tests = result.passed_tests;
+    submission.total_tests = result.total_tests;
+    submission.execution_time_ms = result.execution_time_ms;
+    submission.stdout = result.stdout;
+    submission.stderr = result.stderr;
+    submission.error_message = result.error_message;
+    submission.public_results = result.public_results;
+    submission.hidden_results = result.hidden_results;
+    submission.completed_at = new Date().toISOString();
+    await saveLocalTestSubmission(submission);
+  })().catch((error) => {
+    submission.status = 'system_error';
+    submission.error_message = error instanceof Error ? error.message : 'Local evaluation failed.';
+    submission.completed_at = new Date().toISOString();
+    void saveLocalTestSubmission(submission);
+  });
+
+  return { success: true, submissionId, status: submission.status };
+}
+
 /**
  * Background worker execution for a queued submission.
  */
@@ -526,14 +688,24 @@ async function runSubmissionInBackground(
   sourceCode: string
 ): Promise<void> {
   // Update status to 'running'
+  const memRecord = fallbackSubmissions.get(submissionId);
   try {
-    await supabaseAdmin
+    const { error: statusError } = await supabaseAdmin
       .from('coding_submissions')
       .update({ status: 'running' })
       .eq('id', submissionId);
-  } catch {}
+    if (statusError) {
+      throw statusError;
+    }
+  } catch (error) {
+    console.error('[Judge] Could not mark submission as running:', error);
+    if (memRecord) {
+      memRecord.status = 'system_error';
+      memRecord.error_message = 'Evaluation could not be started.';
+    }
+    return;
+  }
 
-  const memRecord = fallbackSubmissions.get(submissionId);
   if (memRecord) {
     memRecord.status = 'running';
   }
@@ -582,26 +754,10 @@ async function runSubmissionInBackground(
     } catch {}
   }
 
-  // Update Supabase if available
+  // Finalize the score and test results in one database transaction.
   try {
-    await supabaseAdmin
-      .from('coding_submissions')
-      .update({
-        status,
-        score: evalResult.score,
-        passed_tests: evalResult.passed_tests,
-        total_tests: evalResult.total_tests,
-        execution_time_ms: evalResult.execution_time_ms,
-        stdout: evalResult.stdout,
-        stderr: evalResult.stderr,
-        error_message: evalResult.error_message,
-        completed_at: completedAt,
-      })
-      .eq('id', submissionId);
-
     // Insert individual public and hidden test results
-    const testInserts: Array<{
-      submission_id: string;
+    const testResults: Array<{
       test_type: 'public' | 'hidden';
       test_number: number;
       test_name: string | null;
@@ -611,8 +767,7 @@ async function runSubmissionInBackground(
     }> = [];
 
     for (const t of evalResult.public_results || []) {
-      testInserts.push({
-        submission_id: submissionId,
+      testResults.push({
         test_type: 'public',
         test_number: t.test_number,
         test_name: t.test_name,
@@ -623,8 +778,7 @@ async function runSubmissionInBackground(
     }
 
     for (const t of evalResult.hidden_results || []) {
-      testInserts.push({
-        submission_id: submissionId,
+      testResults.push({
         test_type: 'hidden',
         test_number: t.test_number,
         test_name: `Hidden Test #${t.test_number}`,
@@ -634,11 +788,28 @@ async function runSubmissionInBackground(
       });
     }
 
-    if (testInserts.length > 0) {
-      await supabaseAdmin.from('coding_test_results').insert(testInserts);
+    const { error: finalizeError } = await supabaseAdmin.rpc('finalize_coding_submission', {
+      p_submission_id: submissionId,
+      p_status: status,
+      p_score: evalResult.score,
+      p_passed_tests: evalResult.passed_tests,
+      p_total_tests: evalResult.total_tests,
+      p_execution_time_ms: evalResult.execution_time_ms,
+      p_stdout: evalResult.stdout,
+      p_stderr: evalResult.stderr,
+      p_error_message: evalResult.error_message,
+      p_completed_at: completedAt,
+      p_test_results: testResults,
+    });
+    if (finalizeError) {
+      throw finalizeError;
     }
   } catch (dbErr) {
-    console.warn('[Judge] Supabase write skipped (schema pending):', dbErr);
+    console.error('[Judge] Supabase write failed:', dbErr);
+    if (memRecord) {
+      memRecord.status = 'system_error';
+      memRecord.error_message = 'Evaluation result could not be persisted.';
+    }
   }
 }
 
@@ -660,4 +831,3 @@ export async function getSubmissionWithFallback(submissionId: string): Promise<a
 
   return null;
 }
-

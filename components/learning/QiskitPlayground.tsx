@@ -435,9 +435,11 @@ export function QiskitPlayground({
   }, [onSubmissionSuccess]);
 
   // Keep refs synchronized with latest handlers
-  runCodeRef.current = handleRunCode;
-  submitCodeRef.current = handleSubmitCode;
-  saveDraftRef.current = triggerSaveDraft;
+  useEffect(() => {
+    runCodeRef.current = handleRunCode;
+    submitCodeRef.current = handleSubmitCode;
+    saveDraftRef.current = triggerSaveDraft;
+  }, [handleRunCode, handleSubmitCode, triggerSaveDraft]);
 
   // Keyboard shortcut: Cmd/Ctrl + Enter to Run, Cmd/Ctrl + Shift + Enter to Submit, Cmd/Ctrl + S to Save
   const handleKeyDown = (e: React.KeyboardEvent) => {

@@ -5,7 +5,7 @@ import { invalidateEmailCache, invalidateHackathonTeamCache } from '@/lib/redis'
 
 const COOKIE_NAME = 'qff_auth_session';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 function getCookieDomain(req: NextRequest): string | undefined {
   const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || req.nextUrl.hostname;

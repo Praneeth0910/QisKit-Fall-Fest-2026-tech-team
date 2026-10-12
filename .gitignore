@@ -39,10 +39,36 @@ yarn-error.log*
 /dt_venue*
 scratch/
 *.csv
+*.swp
+*.swo
+*~
 
-# Python
+# Python bytecode, environments, and test caches
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+qiskit-judge/.pytest_cache/
+qiskit-judge/.venv/
+qiskit-judge/~/
+.venv/
+venv/
 
-# Local scratch & temporary backups
-.tmp/
+# Test coverage & runner outputs
+.coverage
+.coverage.*
+htmlcov/
+
+# Local judge scratch & temporary solution files
+scratch_*.py
+solution_scratch*
+solutions_scratch/
+tmp_*.py
+temp_*.py
+.local-test-store.json
+.tmp/
+qiskit-final-diff-review.txt
+
+# Preserved challenge solution source
+!solutions.py

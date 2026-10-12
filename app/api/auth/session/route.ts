@@ -1,24 +1,39 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { isEmailWhitelisted } from '@/lib/redis';
-import { SUPER_ADMIN_EMAILS } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server.js';
+import { isEmailWhitelisted } from '../../../../lib/redis.ts';
+import {
+  SUPER_ADMIN_EMAILS,
+  COOKIE_NAME,
+  SESSION_MAX_AGE_SECONDS,
+  signSessionPayload,
+  verifySessionCookie,
+} from '../../../../lib/auth.ts';
+import { getLocalTestSession, isLocalTestAuthEnabled } from '../../../../lib/local-test-auth.ts';
+import { supabase } from '../../../../lib/supabase.ts';
 
-const COOKIE_NAME = 'qff_auth_session';
-
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
+  if (
+    isLocalTestAuthEnabled(request.headers.get('host'), undefined, undefined, {
+      xForwardedHost: request.headers.get('x-forwarded-host'),
+      xForwardedFor: request.headers.get('x-forwarded-for'),
+    })
+  ) {
+    return NextResponse.json({ authenticated: true, session: getLocalTestSession() });
+  }
+
   const sessionCookie = request.cookies.get(COOKIE_NAME);
   if (!sessionCookie || !sessionCookie.value) {
     return NextResponse.json({ authenticated: false, session: null });
   }
 
   try {
-    const parsed = JSON.parse(decodeURIComponent(sessionCookie.value));
-    const email = parsed.email?.trim().toLowerCase();
-    if (!email) {
+    const verified = verifySessionCookie(sessionCookie.value);
+    if (!verified || !verified.email) {
       return NextResponse.json({ authenticated: false, session: null });
     }
 
+    const email = verified.email.trim().toLowerCase();
     const isSuperAdmin = SUPER_ADMIN_EMAILS.includes(email);
     const whitelist = await isEmailWhitelisted(email);
 
@@ -34,9 +49,9 @@ export async function GET(request: NextRequest) {
       !/^\d{5,}-/.test(whitelist.fullName!);
 
     const resolvedFullName =
-      (parsed.fullName && !parsed.fullName.includes('|'))
-        ? parsed.fullName
-        : (isCleanWhitelistName ? whitelist.fullName! : (parsed.fullName || whitelist.fullName || email.split('@')[0]));
+      (verified.fullName && !verified.fullName.includes('|'))
+        ? verified.fullName
+        : (isCleanWhitelistName ? whitelist.fullName! : (verified.fullName || whitelist.fullName || email.split('@')[0]));
 
     return NextResponse.json({
       authenticated: true,
@@ -54,14 +69,43 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    if (
+      isLocalTestAuthEnabled(request.headers.get('host'), undefined, undefined, {
+        xForwardedHost: request.headers.get('x-forwarded-host'),
+        xForwardedFor: request.headers.get('x-forwarded-for'),
+      })
+    ) {
+      return NextResponse.json({ success: true, session: getLocalTestSession() });
+    }
+
     const body = await request.json();
     const email = body.email?.trim().toLowerCase();
     const fullName = body.fullName?.trim() || '';
+    const accessToken = typeof body.accessToken === 'string' ? body.accessToken.trim() : '';
 
     if (!email || !email.includes('@')) {
       return NextResponse.json(
         { error: 'Valid email is required' },
         { status: 400 }
+      );
+    }
+
+    // In production, require verified authentication token to prevent unauthorized session creation
+    if (accessToken) {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser(accessToken);
+      if (authError || !user || user.email?.trim().toLowerCase() !== email) {
+        return NextResponse.json(
+          { error: 'Invalid or expired authentication token.' },
+          { status: 401 }
+        );
+      }
+    } else if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json(
+        { error: 'Authentication token required.' },
+        { status: 401 }
       );
     }
 
@@ -98,6 +142,8 @@ export async function POST(request: NextRequest) {
       isAdmin: isSuperAdmin || role === 'admin',
     };
 
+    const cookieValue = signSessionPayload(sessionData);
+
     const response = NextResponse.json({
       success: true,
       session: sessionData,
@@ -122,15 +168,15 @@ export async function POST(request: NextRequest) {
     const isSecure = isRequestSecure(request);
     const domain = getCookieDomain(request);
 
-    // Set cookie for 14 days
+    // Set signed cookie for 14 days
     response.cookies.set({
       name: COOKIE_NAME,
-      value: encodeURIComponent(JSON.stringify(sessionData)),
+      value: cookieValue,
       httpOnly: true,
       secure: isSecure,
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24 * 14,
+      maxAge: SESSION_MAX_AGE_SECONDS,
       ...(domain ? { domain } : {}),
     });
 

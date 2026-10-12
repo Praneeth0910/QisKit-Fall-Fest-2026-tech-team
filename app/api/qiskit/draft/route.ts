@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { isLocalTestAuthRequest } from '@/lib/local-test-auth';
+import { getLocalTestDraft, saveLocalTestDraft } from '@/lib/local-test-store';
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession();
+    const isLocalTest = await isLocalTestAuthRequest();
     if (!session || !session.email) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
@@ -12,6 +15,11 @@ export async function GET(req: NextRequest) {
     const problemId = req.nextUrl.searchParams.get('problemId');
     if (!problemId) {
       return NextResponse.json({ success: false, error: 'Problem ID required' }, { status: 400 });
+    }
+
+    if (isLocalTest) {
+      const code = await getLocalTestDraft(`${session.email}:${problemId.toUpperCase()}`);
+      return NextResponse.json({ success: true, code, updatedAt: null, localTestMode: true });
     }
 
     const { data: draft } = await supabaseAdmin
@@ -34,6 +42,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession();
+    const isLocalTest = await isLocalTestAuthRequest();
     if (!session || !session.email) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
@@ -41,6 +50,11 @@ export async function POST(req: NextRequest) {
     const { problemId, code } = await req.json();
     if (!problemId || typeof code !== 'string') {
       return NextResponse.json({ success: false, error: 'Invalid parameters' }, { status: 400 });
+    }
+
+    if (isLocalTest) {
+      await saveLocalTestDraft(`${session.email}:${problemId.toUpperCase()}`, code);
+      return NextResponse.json({ success: true, savedAt: new Date().toISOString(), localTestMode: true });
     }
 
     const { error } = await supabaseAdmin

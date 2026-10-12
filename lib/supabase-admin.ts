@@ -1,27 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
-import { Database } from '@/types/supabase';
+import type { Database } from '../types/supabase.ts';
 
 const supabaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jpciyrodeppqpkwqblpk.supabase.co';
-const supabaseServiceRoleKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  'sb_publishable_wjeOXSiT7E63DsDqTaL1cw_JBMTC3kj';
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.warn(
-    '[Supabase] Warning: SUPABASE_SERVICE_ROLE_KEY is missing. Using anon key fallback for database access.'
-  );
-}
-
-export const supabaseAdmin = createClient(
-  supabaseUrl,
-  supabaseServiceRoleKey,
-  {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  }
-);
-
+export const supabaseAdmin = supabaseServiceRoleKey
+  ? createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    })
+  : new Proxy({} as ReturnType<typeof createClient<Database>>, {
+      get() {
+        throw new Error(
+          'SUPABASE_SERVICE_ROLE_KEY must be configured for server-side database access.'
+        );
+      },
+    });
