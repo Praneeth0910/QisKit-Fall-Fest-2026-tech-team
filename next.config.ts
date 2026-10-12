@@ -1,13 +1,31 @@
 import type {NextConfig} from 'next';
+import path from 'path';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   productionBrowserSourceMaps: false,
+  outputFileTracingRoot: path.join(__dirname),
+  outputFileTracingExcludes: {
+    '*': [
+      './qiskit-judge/**/*',
+      './archive/**/*',
+      './tests/**/*',
+    ],
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: false,
+  },
+  env: {
+    SESSION_SECRET:
+      process.env.SESSION_SECRET ||
+      'qff-srmap-2026-fallback-cryptographic-session-signing-secret-key-32chars!',
+    SUPABASE_SERVICE_ROLE_KEY:
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+      'sb_publishable_wjeOXSiT7E63DsDqTaL1cw_JBMTC3kj',
   },
   // Allow access to remote image placeholder.
   images: {

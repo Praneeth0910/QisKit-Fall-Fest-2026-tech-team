@@ -37,6 +37,10 @@ export async function getClientSession(forceRefresh = false): Promise<SessionRes
   inFlightPromise = (async () => {
     try {
       const res = await fetch('/api/auth/session');
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        return { authenticated: false, session: null };
+      }
       const data: SessionResponse = await res.json();
       cachedSessionResponse = data;
       lastFetchTimestamp = Date.now();

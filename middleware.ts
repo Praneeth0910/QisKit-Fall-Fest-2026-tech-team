@@ -20,8 +20,6 @@ const ratelimit =
     : null;
 import { getTrustedClientIp } from './lib/client-ip';
 
-export { getTrustedClientIp };
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
