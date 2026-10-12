@@ -468,12 +468,12 @@ export default function SessionPlayerPage() {
                       </div>
                       <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-[#FAF6F3] truncate">
                         {sessionId === 'session-4'
-                          ? 'Dr. Gangi Reddy Salla & Prof. Durga B. Rao Dasari — Quantum Photonics & Optics Slides'
+                          ? 'Dr. Gangi Reddy Salla — Presentation Slides & Lecture Notes'
                           : `${session.speaker.name} — Presentation Slides & Lecture Notes`}
                       </h3>
                       <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400">
                         {sessionId === 'session-4'
-                          ? 'Authoritative lecture slide deck on Quantum Photonic Technologies, SPDC, single-photon states, and quantum optics.'
+                          ? 'Official lecture slide deck on Quantum Photonic Technologies, SPDC, single-photon states, and quantum optics.'
                           : sessionId === 'session-6'
                           ? 'Complete mathematical proofs, RSA calculations, and quantum cryptography slide material.'
                           : 'Official slides and companion learning materials for this session.'}

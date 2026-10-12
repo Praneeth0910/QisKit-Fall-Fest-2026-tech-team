@@ -39,7 +39,7 @@ This file is automatically loaded by AI agents working in this workspace.
    - 5 active curriculum sessions (`session-1`, `session-3`, `session-4`, `session-5`, `session-6`) with video lectures and concept check quizzes.
    - 3 creative tracks (Digital Poster, Reels, Technical Essay) submitted at `https://www.qffsrmap2026.com/learning`.
    - **Session Materials & Storage Scope:** Presentation decks are hosted directly via Supabase Storage bucket `media` under `session-materials/{session-id}/{filename}.pdf` (backed by RLS migration `20261012111500_allow_session_materials_uploads_in_media_bucket.sql`). Active official decks:
-     - `session-4`: Dr. Gangi Reddy Salla & Prof. Durga B. Rao Dasari (`media/session-materials/session-4/Quantum_Photonic_Technologies.pdf`).
+     - `session-4`: Dr. Gangi Reddy Salla (`media/session-materials/session-4/Quantum_Photonic_Technologies.pdf`).
      - `session-6`: Dr. Sazzad Ali Biswas (`media/session-materials/session-6/Quantum_Cybersecurity_Cryptography.pdf`).
    - **Session 6 Architecture & Sole Speaker Integrity:** Session 6 is delivered exclusively by **Dr. Sazzad Ali Biswas** as the sole speaker (`coSpeakers: []`).
    - **Don Norman Information Architecture:** Official PDF decks are surfaced as prominent hero action cards immediately beneath session descriptions on `/learning/session/{id}`, with transcript accordions collapsed by default to eliminate cognitive clutter while preserving on-demand expandability.
