@@ -11,5 +11,6 @@ All future prompts, email drafts, marketing assets, and instructions referencing
 
 ## Architecture & Governance
 Refer to:
-- `PROJECT_LEARNINGS.md` for confirmed ground truths (GT-01 to GT-22) and architecture.
-- `AGENTS.md` for AI agent operational standards and active deadline extensions.
+- `PROJECT_LEARNINGS.md` for confirmed ground truths (GT-01 to GT-25) and architecture.
+- `AGENTS.md` for AI agent operational standards, active deadline extensions, free event participation rules (GT-24), and 2–6 member hackathon team constraints (GT-25).
+
