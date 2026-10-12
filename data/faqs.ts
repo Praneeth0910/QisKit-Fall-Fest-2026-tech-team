@@ -149,7 +149,7 @@ export const GENERAL_FAQS: FAQItem[] = [
     number: 7,
     question: 'What events are being conducted?',
     answer:
-      'Online competitions (submit via the portal):\n• Tech Reels Competition — 45–90 sec quantum video, prize up to ₹10,000 — deadline 12 Oct\n• Digital Poster Creation — infographic on Quantum Materials or Sensing, prize up to ₹5,000 — deadline 12 Oct\n• Essay Competition — 800–1,200 words on a quantum topic, prize up to ₹5,000 — deadline 12 Oct\n• Flagship Hackathon — Phase 1 online sprint deadline: 13 October 2026\n\nOffline phase (26–30 October at SRM-AP):\n• Quantum Quiddles quiz, QTalk presentations, Guess the QTech, workshops, and the Hackathon Phase 2 finale.',
+      'Online competitions (submit via the portal):\n• Tech Reels Competition — 45–90 sec quantum video, prize up to ₹10,000 — deadline 14 Oct (Extended)\n• Digital Poster Creation — infographic on Quantum Materials or Sensing, prize up to ₹5,000 — deadline 14 Oct (Extended)\n• Essay Competition — 800–1,200 words on a quantum topic, prize up to ₹5,000 — deadline 14 Oct (Extended)\n• Flagship Hackathon — Phase 1 online sprint deadline: 13 October 2026\n\nOffline phase (26–30 October at SRM-AP):\n• Quantum Quiddles quiz, QTalk presentations, Guess the QTech, workshops, and the Hackathon Phase 2 finale.',
     category: 'Events & Competitions',
     section: 'general',
     isTopQuestion: true,
@@ -213,7 +213,7 @@ export const GENERAL_FAQS: FAQItem[] = [
     number: 13,
     question: 'What topics can I write about for the Essay Competition?',
     answer:
-      'You may choose any of the following:\n• Prompt A: The Post-Quantum Cryptographic Migration — Balancing Vulnerability and Readiness\n• Prompt B: Quantum Machine Learning — Fundamental Advantage vs Classical Baseline Realities\n• Or any quantum computing topic of your own choice\n\nWord limit: 800–1,200 words. Deadline: 12 October 2026, 11:59 PM IST.\nSubmit a PDF/DOCX (up to 15 MB) or a public Google Docs link on the portal under Day 3: Essay Competition.',
+      'You may choose any of the following:\n• Prompt A: The Post-Quantum Cryptographic Migration — Balancing Vulnerability and Readiness\n• Prompt B: Quantum Machine Learning — Fundamental Advantage vs Classical Baseline Realities\n• Or any quantum computing topic of your own choice\n\nWord limit: 800–1,200 words. Deadline: 14 October 2026, 11:59 PM IST (Extended from 12 Oct).\nSubmit a PDF/DOCX (up to 15 MB) or a public Google Docs link on the portal under Day 3: Essay Competition.',
     category: 'Events & Competitions',
     section: 'general',
     tags: ['Essay', 'Topics', 'Guidelines'],
@@ -223,7 +223,7 @@ export const GENERAL_FAQS: FAQItem[] = [
     number: 14,
     question: 'Where and when do I submit my Poster and Essay?',
     answer:
-      'Submit on the official portal: https://www.qffsrmap2026.com/learning/\n\n• Essay — Day 3 section → upload PDF/DOCX or paste a public document link\n• Poster — Day 2 section → upload PDF/DOCX or paste a public Canva/Drive link\n• Deadline for both: 12 October 2026, 11:59 PM IST\n\nEnsure any shared links are set to “Anyone with the link can view.”',
+      'Submit on the official portal: https://www.qffsrmap2026.com/learning/\n\n• Essay — Day 3 section → upload PDF/DOCX or paste a public document link\n• Poster — Day 2 section → upload PDF/DOCX or paste a public Canva/Drive link\n• Deadline for both: 14 October 2026, 11:59 PM IST (Extended from 12 Oct)\n\nEnsure any shared links are set to “Anyone with the link can view.”',
     category: 'Events & Competitions',
     section: 'general',
     tags: ['Submission', 'Poster', 'Essay', 'Deadlines'],

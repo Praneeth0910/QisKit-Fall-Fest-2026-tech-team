@@ -323,8 +323,8 @@ export const ONLINE_PROGRAMME_SCHEDULE: DayProgramme[] = [
         sessionId: 'session-1',
       },
       {
-        time: 'Deadline: 12 Oct (11:59 PM)',
-        duration: 'Due 12 Oct',
+        time: 'Deadline: 14 Oct (11:59 PM)',
+        duration: 'Due 14 Oct',
         title: 'Online Game: Tech Reels Competition',
         speaker: 'Open to all participants',
         speakerRole: 'Accessible via LMS / Link',
@@ -402,8 +402,8 @@ export const ONLINE_PROGRAMME_SCHEDULE: DayProgramme[] = [
         sessionId: 'session-4',
       },
       {
-        time: 'Deadline: 12 Oct (11:59 PM)',
-        duration: 'Due 12 Oct',
+        time: 'Deadline: 14 Oct (11:59 PM)',
+        duration: 'Due 14 Oct',
         title: 'Online Game: Digital Poster Creation',
         speaker: 'Open to all participants',
         speakerRole: 'Accessible via LMS / Link',
@@ -479,8 +479,8 @@ export const ONLINE_PROGRAMME_SCHEDULE: DayProgramme[] = [
         sessionId: 'session-6',
       },
       {
-        time: 'Deadline: 12 Oct (11:59 PM)',
-        duration: 'Due 12 Oct',
+        time: 'Deadline: 14 Oct (11:59 PM)',
+        duration: 'Due 14 Oct',
         title: 'Online Game: Essay Competition',
         speaker: 'Open to all participants',
         speakerRole: 'Accessible via LMS / Link',

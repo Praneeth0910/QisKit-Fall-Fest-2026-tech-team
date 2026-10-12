@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { CURRICULUM_SESSIONS, ONLINE_PROGRAMME_SCHEDULE } from '@/data/learning/curriculum';
 import { SESSION_TRANSCRIPTS } from '@/data/learning/transcripts';
 import { DAILY_COMPETITIONS } from '@/data/learning/competitions';
+import { DeadlineExtensionBanner } from '@/components/learning/DeadlineExtensionBanner';
 import { useCurriculumSessions } from '@/hooks/use-curriculum-sessions';
 import { useQuizzes } from '@/hooks/use-quizzes';
 import {
@@ -458,9 +459,14 @@ function LearningDashboardContent() {
         <div className="bg-white dark:bg-[#150709] border border-slate-200 dark:border-[#3D1418] rounded-xl shadow-xs p-5 sm:p-7 space-y-6">
           <div className="border-b border-slate-100 dark:border-[#3D1418] pb-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
             <div>
-              <span className="font-mono text-[10px] font-bold text-burgundy dark:text-[#E89BA5] uppercase tracking-wider block mb-1">
-                Challenge · Day 0{day} · Deadline: 12 October 2026
-              </span>
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <span className="font-mono text-[10px] font-bold text-burgundy dark:text-[#E89BA5] uppercase tracking-wider">
+                  Challenge · Day 0{day} · Deadline: 14 October 2026 (11:59 PM IST)
+                </span>
+                <span className="px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800/80">
+                  Extended
+                </span>
+              </div>
               <h1 className="font-serif text-xl sm:text-2xl font-bold text-[#181313] dark:text-[#FAF6F3] tracking-tight">
                 {challenge.title}
               </h1>
@@ -524,9 +530,12 @@ function LearningDashboardContent() {
             </ul>
             <div className="pt-2 border-t border-slate-200/60 dark:border-[#3D1418] flex items-center justify-between text-xs">
               <span className="text-slate-500 dark:text-slate-400">Deadline:</span>
-              <span className="font-mono font-semibold text-slate-800 dark:text-[#FAF6F3]">
-                {challenge.submissionDeadline}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="line-through text-slate-400 dark:text-slate-500 text-[11px] font-mono">12 Oct</span>
+                <span className="font-mono font-bold text-burgundy dark:text-[#E89BA5]">
+                  {challenge.submissionDeadline}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -1049,6 +1058,9 @@ function LearningDashboardContent() {
           )}
         </button>
       </div>
+
+      {/* Official Deadline Extension Announcement Banner */}
+      <DeadlineExtensionBanner />
 
       {/* 3 Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

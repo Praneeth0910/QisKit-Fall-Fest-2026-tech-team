@@ -276,6 +276,17 @@ export function ExploreSchedule({ currentPhase, onPhaseChange, targetDayIndex }:
               <p className="mt-3 max-w-[720px] font-sans font-normal text-sm sm:text-base leading-relaxed text-[#4E4441] dark:text-[#D6CDCA]">
                 Browse sessions, filter by track, and plan your Fall Fest experience across Online and Offline phases.
               </p>
+
+              {currentPhase === 'online' && (
+                <div className="mt-3.5 inline-flex flex-wrap items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-950 dark:text-amber-200 text-xs">
+                  <span className="font-mono font-bold uppercase tracking-wider text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-900 dark:text-amber-300">
+                    Deadline Extended
+                  </span>
+                  <span>
+                    Creative competitions (Tech Reels, Digital Poster, Technical Essay) are open until 14 Oct, 11:59 PM IST.
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Phase Selector */}
