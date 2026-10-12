@@ -71,6 +71,7 @@ export interface AdminHackathonData {
     teamsWithSubmissions: number;
     downloadedSubmissionsCount: number;
     shortlistedTeamsCount: number;
+    rejectedTeamsCount?: number;
     evaluatedTeamsCount: number;
     totalParticipants: number;
     confirmedParticipants: number;
@@ -199,6 +200,7 @@ async function fetchHackathonAdminData(): Promise<AdminHackathonData> {
   let teamsWithSubmissionsCount = 0;
   let downloadedSubmissionsCount = 0;
   let shortlistedTeamsCount = 0;
+  let rejectedTeamsCount = 0;
   let evaluatedTeamsCount = 0;
 
   const enrichedTeams: AdminHackathonTeam[] = (rawTeams || []).map((t) => {
@@ -210,6 +212,7 @@ async function fetchHackathonAdminData(): Promise<AdminHackathonData> {
     const evalData = evaluationsByTeam[t.id] || null;
     if (evalData?.downloaded) downloadedSubmissionsCount++;
     if (evalData?.is_next_round) shortlistedTeamsCount++;
+    if (evalData?.status === 'rejected') rejectedTeamsCount++;
     if (evalData?.status && evalData.status !== 'pending') evaluatedTeamsCount++;
 
     const teamMembers = membersByTeam[t.id] || [];
@@ -269,6 +272,7 @@ async function fetchHackathonAdminData(): Promise<AdminHackathonData> {
       teamsWithSubmissions: teamsWithSubmissionsCount,
       downloadedSubmissionsCount,
       shortlistedTeamsCount,
+      rejectedTeamsCount,
       evaluatedTeamsCount,
       totalParticipants: rawMembers?.length || 0,
       confirmedParticipants,

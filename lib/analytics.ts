@@ -1,4 +1,5 @@
 import { track as vercelTrack } from '@vercel/analytics';
+import { supabase } from './supabase';
 
 /**
  * Client-Side Analytics Event Tracker
@@ -23,6 +24,18 @@ function getOrCreateVisitorId(): string {
   }
 }
 
+// Check if running in a local development environment
+function isDevEnvironment(): boolean {
+  if (typeof window === 'undefined') return false;
+  const hostname = window.location.hostname;
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '0.0.0.0' ||
+    hostname.endsWith('.local')
+  );
+}
+
 /**
  * Universal Event Tracker
  * Logs to Vercel Analytics and persistent API endpoint
@@ -32,34 +45,57 @@ export function trackEvent(
   properties?: Record<string, string | number | boolean | null | undefined>
 ) {
   if (typeof window === 'undefined') return;
+  if (isDevEnvironment()) return;
 
   // 1. Ingest into Vercel Web Analytics
-  try {
-    vercelTrack(eventName, properties || {});
-  } catch (err) {
-    console.debug('[Vercel Analytics] Track error:', err);
+  // NOTE: @vercel/analytics <Analytics /> already tracks page views automatically at the edge.
+  // We NEVER pass 'page_view' here to prevent double-counting against the 50,000 monthly event quota.
+  if (eventName !== 'page_view') {
+    try {
+      vercelTrack(eventName, properties || {});
+    } catch (err) {
+      console.debug('[Vercel Analytics] Track error:', err);
+    }
   }
 
-  // 2. Ingest into Persistent Database / Cache API
+  // 2. Direct telemetry write to Supabase Pro (bypasses Vercel Serverless Functions completely)
+  // For 'page_view', deduplicate per browser session
+  if (eventName === 'page_view') {
+    try {
+      const pathKey = `qff_pv_${window.location.pathname || '/'}`;
+      if (sessionStorage.getItem(pathKey)) {
+        return; // Already tracked for this session; skip write
+      }
+      sessionStorage.setItem(pathKey, '1');
+    } catch {
+      // sessionStorage may fail in private mode; proceed
+    }
+  }
+
   try {
     const payload = {
       event: eventName,
       path: window.location.pathname || '/',
       properties: properties || {},
-      visitorId: getOrCreateVisitorId(),
-      timestamp: new Date().toISOString(),
+      visitor_id: getOrCreateVisitorId(),
+      created_at: new Date().toISOString(),
     };
 
-    fetch('/api/analytics/track', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      keepalive: true,
-    }).catch((err) => {
-      console.debug('[Internal Analytics] Dispatch error:', err);
-    });
-  } catch (err) {
-    console.debug('[Internal Analytics] Exception:', err);
+    supabase
+      .from('telemetry_events')
+      .insert(payload)
+      .then(
+        ({ error }: any) => {
+          if (error) {
+            console.debug('[Supabase Telemetry] Notice:', error.message);
+          }
+        },
+        (err: any) => {
+          console.debug('[Supabase Telemetry] Dispatch notice:', err);
+        }
+      );
+  } catch (err: any) {
+    console.debug('[Supabase Telemetry] Exception:', err);
   }
 }
 

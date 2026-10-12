@@ -133,7 +133,7 @@ function parseEventDetails(item?: HeroCarouselItem) {
   // Specific event custom overrides for high-profile events
   if (item.id === 'build-01-hackathon-phase-1') {
     venue = 'Online / Virtual Quantum Portal';
-    time = 'Launch: 10 Oct 5:00 PM · Close: 12 Oct 11:59 PM';
+    time = 'Launch: 10 Oct 5:00 PM · Close: 14 Oct 11:59 PM';
   } else if (item.id === 'build-05-hackathon-phase-2-flagship') {
     venue = 'Lab Blocks A & B, SRM University-AP';
     time = '7:30 PM – 7:30 AM IST (24-Hour Overnight)';

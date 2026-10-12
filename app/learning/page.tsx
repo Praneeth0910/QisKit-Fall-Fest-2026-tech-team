@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { CURRICULUM_SESSIONS, ONLINE_PROGRAMME_SCHEDULE } from '@/data/learning/curriculum';
 import { SESSION_TRANSCRIPTS } from '@/data/learning/transcripts';
 import { DAILY_COMPETITIONS } from '@/data/learning/competitions';
+import { DeadlineExtensionBanner } from '@/components/learning/DeadlineExtensionBanner';
 import { useCurriculumSessions } from '@/hooks/use-curriculum-sessions';
 import { useQuizzes } from '@/hooks/use-quizzes';
 import {
@@ -34,6 +35,8 @@ import {
   AlertCircle,
   Loader2,
   X,
+  Download,
+  Share2,
 } from 'lucide-react';
 
 const MAX_DOCUMENT_SIZE_MB = 15;
@@ -111,8 +114,8 @@ function LearningDashboardContent() {
 
   async function fetchSessionUser() {
     try {
-      const res = await fetch('/api/auth/session');
-      const data = await res.json();
+      const { getClientSession } = await import('@/lib/session-client');
+      const data = await getClientSession();
       if (data?.session) {
         setSessionUser({
           email: data.session.email,
@@ -456,9 +459,14 @@ function LearningDashboardContent() {
         <div className="bg-white dark:bg-[#150709] border border-slate-200 dark:border-[#3D1418] rounded-xl shadow-xs p-5 sm:p-7 space-y-6">
           <div className="border-b border-slate-100 dark:border-[#3D1418] pb-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
             <div>
-              <span className="font-mono text-[10px] font-bold text-burgundy dark:text-[#E89BA5] uppercase tracking-wider block mb-1">
-                Challenge · Day 0{day} · Deadline: 12 October 2026
-              </span>
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <span className="font-mono text-[10px] font-bold text-burgundy dark:text-[#E89BA5] uppercase tracking-wider">
+                  Challenge · Day 0{day} · Deadline: 14 October 2026 (11:59 PM IST)
+                </span>
+                <span className="px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800/80">
+                  Extended
+                </span>
+              </div>
               <h1 className="font-serif text-xl sm:text-2xl font-bold text-[#181313] dark:text-[#FAF6F3] tracking-tight">
                 {challenge.title}
               </h1>
@@ -522,9 +530,12 @@ function LearningDashboardContent() {
             </ul>
             <div className="pt-2 border-t border-slate-200/60 dark:border-[#3D1418] flex items-center justify-between text-xs">
               <span className="text-slate-500 dark:text-slate-400">Deadline:</span>
-              <span className="font-mono font-semibold text-slate-800 dark:text-[#FAF6F3]">
-                {challenge.submissionDeadline}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="line-through text-slate-400 dark:text-slate-500 text-[11px] font-mono">12 Oct</span>
+                <span className="font-mono font-bold text-burgundy dark:text-[#E89BA5]">
+                  {challenge.submissionDeadline}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -574,6 +585,243 @@ function LearningDashboardContent() {
                     <span>Public Link (URL)</span>
                   </button>
                 </div>
+              </div>
+            )}
+
+            {/* Tech Reels Dedicated Brand Kit & Social Tagging Instructions */}
+            {challenge.type === 'reels' && (
+              <div className="space-y-4">
+                {/* Existing Drive link warning banner if participant already submitted a Google Drive link */}
+                {Boolean(
+                  recordedSub?.submission_url &&
+                    (recordedSub.submission_url.includes('drive.google.com') ||
+                      recordedSub.submission_url.includes('drive.google'))
+                ) && (
+                  <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs space-y-1.5 shadow-2xs">
+                    <div className="flex items-center gap-2 font-bold text-amber-900 dark:text-amber-200">
+                      <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                      <span>Action Required: Update Your Submission to a Live Social Link</span>
+                    </div>
+                    <p className="text-amber-800 dark:text-amber-300 leading-relaxed pl-6">
+                      Your current recorded submission is a Google Drive link. Drive links do not generate public reach or community engagement and will not qualify for engagement points. Please post your video as an Instagram Reel or LinkedIn Video using the official logos below, then update your submission with the public post link.
+                    </p>
+                  </div>
+                )}
+
+                {/* Mandatory Brand Kit Download Card */}
+                <div className="p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-[#3D1418] bg-slate-50/70 dark:bg-[#1A090C] space-y-3.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 dark:border-[#3D1418] pb-3">
+                    <div>
+                      <h3 className="font-sans text-xs sm:text-sm font-bold text-slate-900 dark:text-[#FAF6F3]">
+                        Official Brand Assets & Logos (Mandatory)
+                      </h3>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        Download both high-resolution logos and feature them in your reel (intro card, corner watermark, or outro).
+                      </p>
+                    </div>
+                    <span className="font-mono text-[10px] font-semibold text-burgundy dark:text-[#E89BA5] px-2.5 py-1 rounded bg-burgundy/10 dark:bg-burgundy/20 border border-burgundy/20 dark:border-burgundy/40 shrink-0 self-start sm:self-auto">
+                      Required for Evaluation
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
+                    {/* Logo 1: Qiskit Fall Fest 2026 SRM AP Badge */}
+                    <div className="p-3 rounded-lg border border-slate-200 dark:border-[#3D1418] bg-white dark:bg-[#150709] flex items-center justify-between gap-3 shadow-2xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-12 h-12 rounded-lg bg-slate-100 dark:bg-[#280C10] p-1 flex items-center justify-center shrink-0 border border-slate-200/80 dark:border-[#3D1418]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src="/brand/qiskit-fall-fest-2026-badge.png"
+                            alt="Qiskit Fall Fest 2026 SRM AP Badge"
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                            Qiskit Fall Fest Badge
+                          </p>
+                          <p className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
+                            PNG · High-Res 1080p
+                          </p>
+                        </div>
+                      </div>
+                      <a
+                        href="/brand/qiskit-fall-fest-2026-badge.png"
+                        download="Qiskit-Fall-Fest-2026-SRMAP-Badge.png"
+                        className="px-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-[#2A0F13] hover:bg-burgundy hover:text-white dark:hover:bg-burgundy text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download</span>
+                      </a>
+                    </div>
+
+                    {/* Logo 2: SRM University-AP Official Logo */}
+                    <div className="p-3 rounded-lg border border-slate-200 dark:border-[#3D1418] bg-white dark:bg-[#150709] flex items-center justify-between gap-3 shadow-2xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-12 h-12 rounded-lg bg-slate-100 dark:bg-[#280C10] p-1 flex items-center justify-center shrink-0 border border-slate-200/80 dark:border-[#3D1418]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src="/brand/srm-ap-logo.png"
+                            alt="SRM University-AP Logo"
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                            SRM University-AP Logo
+                          </p>
+                          <p className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
+                            PNG · Transparent
+                          </p>
+                        </div>
+                      </div>
+                      <a
+                        href="/brand/srm-ap-logo.png"
+                        download="SRM-University-AP-Official-Logo.png"
+                        className="px-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-[#2A0F13] hover:bg-burgundy hover:text-white dark:hover:bg-burgundy text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Social Tagging Quick Reference */}
+                  <div className="p-3 rounded-lg bg-slate-100/70 dark:bg-[#200A0E] border border-slate-200/70 dark:border-[#3D1418] text-xs space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200">
+                      <Share2 className="w-3.5 h-3.5 text-burgundy dark:text-[#E89BA5]" />
+                      <span>Social Posting & Tagging Instructions:</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
+                      <div className="p-2.5 rounded bg-white dark:bg-[#150709] border border-slate-200/60 dark:border-[#3D1418] space-y-0.5">
+                        <p className="font-bold text-slate-800 dark:text-slate-200 font-sans text-xs">Instagram Reel</p>
+                        <p className="text-slate-600 dark:text-slate-300">
+                          Tag: <span className="text-burgundy dark:text-[#E89BA5] font-bold">@qiskitfallfest</span> & <span className="text-burgundy dark:text-[#E89BA5] font-bold">@srmuap</span>
+                        </p>
+                        <p className="text-slate-500 dark:text-slate-400 text-[10px]">
+                          #QiskitFallFest2026 #QiskitFallFestSRMAP #SRMUniversityAP
+                        </p>
+                      </div>
+                      <div className="p-2.5 rounded bg-white dark:bg-[#150709] border border-slate-200/60 dark:border-[#3D1418] space-y-0.5">
+                        <p className="font-bold text-slate-800 dark:text-slate-200 font-sans text-xs">LinkedIn Video Post</p>
+                        <p className="text-slate-600 dark:text-slate-300">
+                          Mention: <span className="text-burgundy dark:text-[#E89BA5] font-bold">SRM University-AP</span> & <span className="text-burgundy dark:text-[#E89BA5] font-bold">Qiskit</span>
+                        </p>
+                        <p className="text-slate-500 dark:text-slate-400 text-[10px]">
+                          #QiskitFallFest2026 #QiskitFallFestSRMAP #SRMUniversityAP
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Digital Poster Dedicated Brand Kit & Anti-AI Policy */}
+            {challenge.type === 'poster' && (
+              <div className="space-y-4">
+                {/* Strict AI Prohibition & Plagiarism Alert */}
+                <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-xs space-y-1.5 shadow-2xs">
+                  <div className="flex items-center gap-2 font-bold text-rose-900 dark:text-rose-200">
+                    <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                    <span>Strict Policy: Generative AI Prohibited & Plagiarism Checked</span>
+                  </div>
+                  <p className="text-rose-800 dark:text-rose-300 leading-relaxed pl-6">
+                    Posters generated using artificial intelligence (e.g., Midjourney, DALL-E, Canva Magic Media, or automated generators) are strictly prohibited. Visual layouts, diagrams, and content are screened for plagiarism. Only authentic, original participant work is eligible for awards.
+                  </p>
+                </div>
+
+                {/* Mandatory Brand Assets Download Card */}
+                <div className="p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-[#3D1418] bg-slate-50/70 dark:bg-[#1A090C] space-y-3.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 dark:border-[#3D1418] pb-3">
+                    <div>
+                      <h3 className="font-sans text-xs sm:text-sm font-bold text-slate-900 dark:text-[#FAF6F3]">
+                        Official Brand Assets & Logos (Mandatory)
+                      </h3>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        Download both high-resolution logos and include them in your digital poster layout (header, footer, or corner).
+                      </p>
+                    </div>
+                    <span className="font-mono text-[10px] font-semibold text-burgundy dark:text-[#E89BA5] px-2.5 py-1 rounded bg-burgundy/10 dark:bg-burgundy/20 border border-burgundy/20 dark:border-burgundy/40 shrink-0 self-start sm:self-auto">
+                      Required for Evaluation
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
+                    {/* Logo 1: Qiskit Fall Fest 2026 SRM AP Badge */}
+                    <div className="p-3 rounded-lg border border-slate-200 dark:border-[#3D1418] bg-white dark:bg-[#150709] flex items-center justify-between gap-3 shadow-2xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-12 h-12 rounded-lg bg-slate-100 dark:bg-[#280C10] p-1 flex items-center justify-center shrink-0 border border-slate-200/80 dark:border-[#3D1418]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src="/brand/qiskit-fall-fest-2026-badge.png"
+                            alt="Qiskit Fall Fest 2026 SRM AP Badge"
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                            Qiskit Fall Fest Badge
+                          </p>
+                          <p className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
+                            PNG · High-Res 1080p
+                          </p>
+                        </div>
+                      </div>
+                      <a
+                        href="/brand/qiskit-fall-fest-2026-badge.png"
+                        download="Qiskit-Fall-Fest-2026-SRMAP-Badge.png"
+                        className="px-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-[#2A0F13] hover:bg-burgundy hover:text-white dark:hover:bg-burgundy text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download</span>
+                      </a>
+                    </div>
+
+                    {/* Logo 2: SRM University-AP Official Logo */}
+                    <div className="p-3 rounded-lg border border-slate-200 dark:border-[#3D1418] bg-white dark:bg-[#150709] flex items-center justify-between gap-3 shadow-2xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-12 h-12 rounded-lg bg-slate-100 dark:bg-[#280C10] p-1 flex items-center justify-center shrink-0 border border-slate-200/80 dark:border-[#3D1418]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src="/brand/srm-ap-logo.png"
+                            alt="SRM University-AP Logo"
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                            SRM University-AP Logo
+                          </p>
+                          <p className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
+                            PNG · Transparent
+                          </p>
+                        </div>
+                      </div>
+                      <a
+                        href="/brand/srm-ap-logo.png"
+                        download="SRM-University-AP-Official-Logo.png"
+                        className="px-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-[#2A0F13] hover:bg-burgundy hover:text-white dark:hover:bg-burgundy text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Essay Competition Dedicated Anti-AI & Plagiarism Warning */}
+            {challenge.type === 'essay' && (
+              <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-xs space-y-1.5 shadow-2xs">
+                <div className="flex items-center gap-2 font-bold text-rose-900 dark:text-rose-200">
+                  <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                  <span>Strict Policy: AI-Generated Content Prohibited (Automated Plagiarism Screening Active)</span>
+                </div>
+                <p className="text-rose-800 dark:text-rose-300 leading-relaxed pl-6">
+                  Essays must be 100% human-authored by the registered participant. The use of generative AI tools (ChatGPT, Claude, Gemini, etc.) or uncredited copied text is strictly prohibited. Every submission is analyzed via automated AI-detection engines and academic plagiarism scanners. Flagged submissions will be disqualified immediately.
+                </p>
               </div>
             )}
 
@@ -653,9 +901,18 @@ function LearningDashboardContent() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
-                    Work URL (Public Link)
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      {challenge.type === 'reels'
+                        ? 'Instagram Reel or LinkedIn Video URL (Public)'
+                        : 'Work URL (Public Link)'}
+                    </label>
+                    {challenge.type === 'reels' && (
+                      <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
+                        Instagram Reel or LinkedIn Post preferred
+                      </span>
+                    )}
+                  </div>
                   <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       type="url"
@@ -684,11 +941,25 @@ function LearningDashboardContent() {
                       ) : (
                         <>
                           <Send className="w-3.5 h-3.5" />
-                          <span>{recordedSub ? 'Update Link' : 'Submit Link'}</span>
+                          <span>
+                            {challenge.type === 'reels' &&
+                            recordedSub?.submission_url &&
+                            (recordedSub.submission_url.includes('drive.google.com') ||
+                              recordedSub.submission_url.includes('drive.google'))
+                              ? 'Update with Social Link'
+                              : recordedSub
+                              ? 'Update Link'
+                              : 'Submit Link'}
+                          </span>
                         </>
                       )}
                     </button>
                   </div>
+                  {challenge.type === 'reels' && (
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Accepted: Live Instagram Reel or LinkedIn Video link. Ensure your post is set to Public for evaluation.
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -707,18 +978,28 @@ function LearningDashboardContent() {
               )}
 
               {recordedSub && (
-                <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#1C0A0D] border border-slate-200 dark:border-[#3D1418] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
+                <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-[#1C0A0D] border border-slate-200 dark:border-[#3D1418] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start sm:items-center gap-2.5 min-w-0">
                     {isRecordedUploadedDoc ? (
-                      <FileText className="w-4 h-4 text-burgundy dark:text-[#E89BA5] shrink-0" />
+                      <FileText className="w-4 h-4 text-burgundy dark:text-[#E89BA5] shrink-0 mt-0.5 sm:mt-0" />
                     ) : (
-                      <Link2 className="w-4 h-4 text-burgundy dark:text-[#E89BA5] shrink-0" />
+                      <Link2 className="w-4 h-4 text-burgundy dark:text-[#E89BA5] shrink-0 mt-0.5 sm:mt-0" />
                     )}
                     <div className="min-w-0">
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
-                        Recorded Submission ({isRecordedUploadedDoc ? 'Uploaded Document' : 'Public Link'}):
-                      </span>
-                      <span className="font-mono text-xs font-semibold text-slate-900 dark:text-[#FAF6F3] truncate block">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Recorded Submission ({isRecordedUploadedDoc ? 'Uploaded Document' : 'Public Link'}):
+                        </span>
+                        {challenge.type === 'reels' &&
+                          recordedSub.submission_url &&
+                          (recordedSub.submission_url.includes('drive.google.com') ||
+                            recordedSub.submission_url.includes('drive.google')) && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                              Google Drive (Needs Social Post URL)
+                            </span>
+                          )}
+                      </div>
+                      <span className="font-mono text-xs font-semibold text-slate-900 dark:text-[#FAF6F3] truncate block mt-0.5">
                         {recordedSub.submission_title || recordedSub.submission_url}
                       </span>
                     </div>
@@ -777,6 +1058,9 @@ function LearningDashboardContent() {
           )}
         </button>
       </div>
+
+      {/* Official Deadline Extension Announcement Banner */}
+      <DeadlineExtensionBanner />
 
       {/* 3 Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

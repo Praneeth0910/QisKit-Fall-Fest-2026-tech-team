@@ -384,20 +384,32 @@ export function AdminCodingChallengeView() {
                         {sub.challenge_id}
                       </td>
                       <td className="px-3.5 py-2.5">
-                        <span
-                          className={clsx(
-                            'px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1',
-                            isAccepted &&
-                              'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
-                            isPartial &&
-                              'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
-                            !isAccepted &&
-                              !isPartial &&
-                              'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                        <div className="flex flex-col gap-1 items-start">
+                          <span
+                            className={clsx(
+                              'px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1',
+                              isAccepted &&
+                                'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
+                              isPartial &&
+                                'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+                              !isAccepted &&
+                                !isPartial &&
+                                'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                            )}
+                          >
+                            {sub.status}
+                          </span>
+                          {sub.evaluation?.is_next_round && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                              Round 2
+                            </span>
                           )}
-                        >
-                          {sub.status}
-                        </span>
+                          {sub.evaluation?.status === 'rejected' && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-wider bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-700">
+                              Rejected
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-3.5 py-2.5 font-mono font-bold text-slate-800 dark:text-[#FAF6F3]">
                         {sub.score} / {sub.max_score}
@@ -421,7 +433,7 @@ export function AdminCodingChallengeView() {
                           className="px-2.5 py-1 rounded bg-slate-900 dark:bg-[#250D11] hover:bg-slate-800 text-white font-mono text-[11px] inline-flex items-center gap-1 cursor-pointer transition-colors"
                         >
                           <Sliders className="w-3 h-3" />
-                          <span>Review</span>
+                          <span>Review Desk</span>
                         </button>
                       </td>
                     </tr>
@@ -445,8 +457,16 @@ export function AdminCodingChallengeView() {
           targetId={selectedSubForEvaluation.id}
           targetTitle={`${selectedSubForEvaluation.user_email} (Problem ${selectedSubForEvaluation.challenge_id})`}
           targetSubtitle={`Score: ${selectedSubForEvaluation.score}/${selectedSubForEvaluation.max_score} · Tests: ${selectedSubForEvaluation.passed_tests}/${selectedSubForEvaluation.total_tests} · Status: ${selectedSubForEvaluation.status}`}
-          initialEvaluation={null}
-          onEvaluationUpdated={() => {
+          targetCode={selectedSubForEvaluation.source_code || null}
+          initialEvaluation={selectedSubForEvaluation.evaluation || null}
+          onEvaluationUpdated={(updatedEval) => {
+            setData((prev: any) => {
+              if (!prev) return prev;
+              const nextSubs = (prev.recentSubmissions || []).map((s: any) =>
+                s.id === updatedEval.target_id ? { ...s, evaluation: updatedEval } : s
+              );
+              return { ...prev, recentSubmissions: nextSubs };
+            });
             fetchStats();
           }}
         />

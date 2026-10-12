@@ -27,6 +27,7 @@ import {
   MessageSquare,
   Copy,
   Check,
+  XCircle,
 } from 'lucide-react';
 import type {
   AdminHackathonData,
@@ -47,7 +48,7 @@ export function AdminHackathonView() {
   const [viewMode, setViewMode] = useState<'teams' | 'participants' | 'insights'>('teams');
 
   // Pipeline Filter (Teams view)
-  const [pipelineFilter, setPipelineFilter] = useState<'all' | 'ready' | 'shortlisted' | 'downloaded' | 'draft'>('all');
+  const [pipelineFilter, setPipelineFilter] = useState<'all' | 'ready' | 'shortlisted' | 'rejected' | 'downloaded' | 'draft'>('all');
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -135,9 +136,11 @@ export function AdminHackathonView() {
               let downloadedCount = 0;
               let shortlistedCount = 0;
               let evaluatedCount = 0;
+              let rejectedCount = 0;
               nextTeams.forEach((t) => {
                 if (t.evaluation?.downloaded) downloadedCount++;
                 if (t.evaluation?.is_next_round) shortlistedCount++;
+                if (t.evaluation?.status === 'rejected') rejectedCount++;
                 if (t.evaluation?.status && t.evaluation.status !== 'pending') evaluatedCount++;
               });
 
@@ -148,6 +151,7 @@ export function AdminHackathonView() {
                   ...prev.stats,
                   downloadedSubmissionsCount: downloadedCount,
                   shortlistedTeamsCount: shortlistedCount,
+                  rejectedTeamsCount: rejectedCount,
                   evaluatedTeamsCount: evaluatedCount,
                 },
               };
@@ -169,6 +173,27 @@ export function AdminHackathonView() {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const recomputeHackathonStats = (teams: AdminHackathonTeam[], baseStats: any) => {
+    if (!baseStats) return baseStats;
+    let downloadedCount = 0;
+    let shortlistedCount = 0;
+    let evaluatedCount = 0;
+    let rejectedCount = 0;
+    teams.forEach((t) => {
+      if (t.evaluation?.downloaded) downloadedCount++;
+      if (t.evaluation?.is_next_round) shortlistedCount++;
+      if (t.evaluation?.status === 'rejected') rejectedCount++;
+      if (t.evaluation?.status && t.evaluation.status !== 'pending') evaluatedCount++;
+    });
+    return {
+      ...baseStats,
+      downloadedSubmissionsCount: downloadedCount,
+      shortlistedTeamsCount: shortlistedCount,
+      rejectedTeamsCount: rejectedCount,
+      evaluatedTeamsCount: evaluatedCount,
+    };
+  };
 
   // Quick Action: Download Repo ZIP + Auto-Tick in DB
   const handleQuickDownload = async (team: AdminHackathonTeam) => {
@@ -208,7 +233,7 @@ export function AdminHackathonView() {
           const nextTeams = prev.teams.map((t) =>
             t.id === team.id ? { ...t, evaluation: json.evaluation } : t
           );
-          return { ...prev, teams: nextTeams };
+          return { ...prev, teams: nextTeams, stats: recomputeHackathonStats(nextTeams, prev.stats) };
         });
       }
     } catch (err) {
@@ -240,11 +265,50 @@ export function AdminHackathonView() {
           const nextTeams = prev.teams.map((t) =>
             t.id === team.id ? { ...t, evaluation: json.evaluation } : t
           );
-          return { ...prev, teams: nextTeams };
+          return { ...prev, teams: nextTeams, stats: recomputeHackathonStats(nextTeams, prev.stats) };
         });
       }
     } catch (err) {
       console.error('Error toggling next round:', err);
+    } finally {
+      setActionInProgressId(null);
+    }
+  };
+
+  // Quick Action: Toggle Rejection
+  const handleQuickToggleReject = async (team: AdminHackathonTeam) => {
+    try {
+      setActionInProgressId(team.id);
+
+      const res = await fetch('/api/admin/evaluations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: 'hackathon',
+          target_id: team.id,
+          action: 'toggle_reject',
+        }),
+      });
+
+      const json = await res.json();
+      if (json.success && json.evaluation) {
+        setData((prev) => {
+          if (!prev) return prev;
+          const nextTeams = prev.teams.map((t) =>
+            t.id === team.id ? { ...t, evaluation: json.evaluation } : t
+          );
+          return { ...prev, teams: nextTeams, stats: recomputeHackathonStats(nextTeams, prev.stats) };
+        });
+        const wasRejected = json.evaluation.status === 'rejected';
+        setFeedbackMsg(
+          wasRejected
+            ? `Team "${team.name}" marked as rejected.`
+            : `Rejection cleared for "${team.name}" (restored to review).`
+        );
+        setTimeout(() => setFeedbackMsg(null), 4000);
+      }
+    } catch (err) {
+      console.error('Error toggling rejection:', err);
     } finally {
       setActionInProgressId(null);
     }
@@ -270,7 +334,7 @@ export function AdminHackathonView() {
       const nextTeams = prev.teams.map((t) =>
         t.id === updated.target_id ? { ...t, evaluation: updated } : t
       );
-      return { ...prev, teams: nextTeams };
+      return { ...prev, teams: nextTeams, stats: recomputeHackathonStats(nextTeams, prev.stats) };
     });
   };
 
@@ -325,6 +389,7 @@ export function AdminHackathonView() {
       // Pipeline filter
       if (pipelineFilter === 'ready' && !t.github_repo_url) return false;
       if (pipelineFilter === 'shortlisted' && !t.evaluation?.is_next_round) return false;
+      if (pipelineFilter === 'rejected' && t.evaluation?.status !== 'rejected') return false;
       if (pipelineFilter === 'downloaded' && !t.evaluation?.downloaded) return false;
       if (pipelineFilter === 'draft' && t.github_repo_url) return false;
 
@@ -758,6 +823,17 @@ export function AdminHackathonView() {
             </button>
             <button
               type="button"
+              onClick={() => setPipelineFilter('rejected')}
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                pipelineFilter === 'rejected'
+                  ? 'bg-white dark:bg-[#250D11] text-rose-700 dark:text-rose-300 shadow-xs border border-rose-200 dark:border-rose-800'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              Rejected ({data?.stats?.rejectedTeamsCount ?? data?.teams.filter((t) => t.evaluation?.status === 'rejected').length ?? 0})
+            </button>
+            <button
+              type="button"
               onClick={() => setPipelineFilter('downloaded')}
               className={`px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                 pipelineFilter === 'downloaded'
@@ -876,6 +952,13 @@ export function AdminHackathonView() {
                       <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-burgundy/10 text-burgundy dark:bg-burgundy/25 dark:text-[#E89BA5]">
                         {team.problem_statement_id}
                       </span>
+
+                      {team.evaluation?.status === 'rejected' && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-700 flex items-center gap-1">
+                          <XCircle className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                          Rejected
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600 dark:text-slate-300">
@@ -1002,6 +1085,25 @@ export function AdminHackathonView() {
                     >
                       <CheckCircle2 className={`w-3.5 h-3.5 ${team.evaluation?.is_next_round ? 'text-white' : 'text-slate-400'}`} />
                       <span>{team.evaluation?.is_next_round ? 'Round 2 Shortlisted' : 'Mark Next Round'}</span>
+                    </button>
+
+                    {/* Quick Toggle Reject */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleQuickToggleReject(team);
+                      }}
+                      disabled={actionInProgressId === team.id}
+                      className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50 ${
+                        team.evaluation?.status === 'rejected'
+                          ? 'bg-rose-600 hover:bg-rose-700 text-white border border-rose-500'
+                          : 'bg-white dark:bg-[#1C0A0D] hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/40 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-[#3D1418]'
+                      }`}
+                      title={team.evaluation?.status === 'rejected' ? 'Undo rejection (restore to review)' : 'Reject team submission'}
+                    >
+                      <XCircle className={`w-3.5 h-3.5 ${team.evaluation?.status === 'rejected' ? 'text-white' : 'text-slate-400'}`} />
+                      <span>{team.evaluation?.status === 'rejected' ? 'Rejected' : 'Reject'}</span>
                     </button>
 
                     {team.evaluation?.score !== null && team.evaluation?.score !== undefined && (

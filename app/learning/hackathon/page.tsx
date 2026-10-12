@@ -31,8 +31,10 @@ import {
   Trophy,
   GraduationCap,
   MessageCircle,
+  Copy,
 } from 'lucide-react';
-import { REGISTRATION_URL, WHATSAPP_COMMUNITY_URL } from '@/lib/constants';
+import { REGISTRATION_URL, WHATSAPP_COMMUNITY_URL, HACKATHON_WORKSPACE_URL } from '@/lib/constants';
+import { supabase } from '@/lib/supabase';
 
 const VERTICALS: VerticalType[] = [
   'Quantum Chemistry',
@@ -45,11 +47,44 @@ const VERTICALS: VerticalType[] = [
 export default function HackathonWorkspacePage() {
   const [sessionUser, setSessionUser] = useState<any>(null);
   const fetcher = (url: string) => fetch(url).then((res) => res.json());
-  const { data: teamDataObj, error: teamError, mutate: mutateTeam } = useSWR('/api/hackathon/team', fetcher);
+  const { data: teamDataObj, error: teamError, mutate: mutateTeam } = useSWR('/api/hackathon/team', fetcher, {
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+    revalidateIfStale: false,
+    dedupingInterval: 5000,
+  });
+
+  // Supabase Realtime: instant push updates on invitations, member status, and roster changes
+  useEffect(() => {
+    if (!sessionUser?.email) return;
+
+    const channel = supabase
+      .channel(`hackathon-realtime-${sessionUser.email.toLowerCase()}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'team_members' },
+        () => {
+          mutateTeam();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'hackathon_teams' },
+        () => {
+          mutateTeam();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sessionUser?.email, mutateTeam]);
   
   const team = teamDataObj?.team || null;
   const pendingInvitations: any[] = teamDataObj?.pendingInvitations || [];
   const isLoading = !teamDataObj && !teamError;
+  const [isRefreshingRoster, setIsRefreshingRoster] = useState(false);
 
   useEffect(() => {
     if (team?.github_repo_url) {
@@ -106,6 +141,30 @@ export default function HackathonWorkspacePage() {
   const [isFinalizingTeam, setIsFinalizingTeam] = useState(false);
   const [finalizeError, setFinalizeError] = useState('');
   const [finalizeSuccess, setFinalizeSuccess] = useState('');
+  const [recentInvitedEmail, setRecentInvitedEmail] = useState<string | null>(null);
+  const [copiedInviteEmail, setCopiedInviteEmail] = useState<string | null>(null);
+  const [respondingInviteId, setRespondingInviteId] = useState<string | null>(null);
+  const [respondingInviteErr, setRespondingInviteErr] = useState<string>('');
+
+  function getInviteShareMessage(teammateEmail?: string) {
+    const teamNameStr = team?.name ? `"${team.name}"` : 'our team';
+    const emailStr = teammateEmail ? ` (${teammateEmail})` : '';
+    return `Hey! You've been invited to join team ${teamNameStr} for Qiskit Fall Fest 2026. Please log in with your registered Gmail${emailStr} at ${HACKATHON_WORKSPACE_URL} to accept your in-portal invitation!`;
+  }
+
+  function handleCopyInviteMessage(teammateEmail?: string) {
+    const msg = getInviteShareMessage(teammateEmail);
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(msg);
+      setCopiedInviteEmail(teammateEmail || 'general');
+      setTimeout(() => setCopiedInviteEmail(null), 3000);
+    }
+  }
+
+  function getWhatsAppShareUrl(teammateEmail?: string) {
+    const msg = getInviteShareMessage(teammateEmail);
+    return `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+  }
 
   // Sync change state when team loads
   useEffect(() => {
@@ -280,6 +339,8 @@ export default function HackathonWorkspacePage() {
 
   // Respond to invitation (accept / decline)
   async function handleInviteResponse(invitationId: string, action: 'accept' | 'decline') {
+    setRespondingInviteId(invitationId);
+    setRespondingInviteErr('');
     try {
       const res = await fetch('/api/hackathon/invite-respond', {
         method: 'POST',
@@ -287,11 +348,17 @@ export default function HackathonWorkspacePage() {
         body: JSON.stringify({ invitationId, action }),
       });
       const data = await res.json();
-      if (data.success) {
-        await fetchTeamData();
+      if (!res.ok || !data.success) {
+        setRespondingInviteErr(data.error || 'Failed to process invitation response.');
+        return;
       }
-    } catch (err) {
+      // Revalidate fresh team data immediately
+      await mutateTeam();
+    } catch (err: any) {
       console.error('Error responding to invitation:', err);
+      setRespondingInviteErr(err?.message || 'A network error occurred while responding to the invitation.');
+    } finally {
+      setRespondingInviteId(null);
     }
   }
 
@@ -430,7 +497,9 @@ export default function HackathonWorkspacePage() {
         return;
       }
 
-      setMemberActionMsg(`Invitation dispatched to ${newMemberEmail.trim()}!`);
+      const addedEmail = newMemberEmail.trim();
+      setRecentInvitedEmail(addedEmail);
+      setMemberActionMsg(`In-portal invitation created for ${addedEmail}!`);
       setNewMemberEmail('');
       setNewMemberName('');
       setNewMemberUniversity('');
@@ -498,7 +567,8 @@ export default function HackathonWorkspacePage() {
         return;
       }
 
-      setMemberActionMsg(`Invitation refreshed for ${memberEmail}.`);
+      setRecentInvitedEmail(memberEmail);
+      setMemberActionMsg(`In-portal invitation refreshed for ${memberEmail}.`);
       await fetchTeamData();
     } catch (err: any) {
       setMemberActionErr(err?.message || 'Error resending invitation.');
@@ -651,52 +721,80 @@ export default function HackathonWorkspacePage() {
                 Action Required: Pending Team Invitations ({pendingInvitations.length})
               </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {pendingInvitations.map((inv) => (
-                  <div
-                    key={inv.invitationId}
-                    className="p-5 bg-white dark:bg-[#150709] border-2 border-burgundy/40 dark:border-burgundy/60 rounded-xl shadow-xs space-y-3"
-                  >
-                    <div>
-                      <span className="text-sm font-bold uppercase tracking-wider text-burgundy dark:text-[#E89BA5] block">
-                        Team Invitation
-                      </span>
-                      <h3 className="text-base font-bold text-slate-900 dark:text-[#FAF6F3]">{inv.teamName}</h3>
-                      <p className="text-base text-slate-600 dark:text-slate-300 mt-1">
-                        Invited by <span className="font-semibold text-slate-800 dark:text-[#FAF6F3]">{inv.leadName}</span> ({inv.leadEmail})
-                      </p>
-                    </div>
-
-                    <div className="text-sm bg-slate-50 dark:bg-[#1C0A0D] p-2.5 rounded border border-slate-200 dark:border-[#3D1418] text-slate-700 dark:text-slate-300 space-y-1">
-                      <div>
-                        <span className="font-bold">Track:</span> {inv.vertical}
-                      </div>
-                      <div>
-                        <span className="font-bold">Problem Statement:</span> {inv.problemStatementId}
-                      </div>
-                    </div>
-
-                    <p className="text-base text-slate-500 dark:text-slate-400 leading-snug">
-                      Accepting this invitation confirms you as a full team member and unlocks the
-                      dossier for {inv.problemStatementId}. You cannot join other teams once accepted.
-                    </p>
-
-                    <div className="flex gap-2 pt-1">
-                      <button
-                        onClick={() => handleInviteResponse(inv.invitationId, 'accept')}
-                        className="flex-1 px-4 py-2 bg-burgundy text-white text-sm font-semibold rounded hover:bg-burgundy-deep transition-colors cursor-pointer"
-                      >
-                        Accept Invitation
-                      </button>
-                      <button
-                        onClick={() => handleInviteResponse(inv.invitationId, 'decline')}
-                        className="px-4 py-2 bg-slate-100 dark:bg-[#1C0A0D] hover:bg-slate-200 dark:hover:bg-[#250D11] text-slate-700 dark:text-slate-300 text-sm font-semibold rounded transition-colors cursor-pointer"
-                      >
-                        Decline
-                      </button>
-                    </div>
+              {respondingInviteErr && (
+                <div className="p-3.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-800 dark:text-rose-300 text-xs flex items-center justify-between gap-2 animate-in fade-in">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                    <span>{respondingInviteErr}</span>
                   </div>
-                ))}
+                  <button
+                    type="button"
+                    onClick={() => setRespondingInviteErr('')}
+                    className="p-1 text-rose-600 hover:text-rose-800 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {pendingInvitations.map((inv) => {
+                  const isProcessing = respondingInviteId === inv.invitationId;
+                  return (
+                    <div
+                      key={inv.invitationId}
+                      className="p-5 bg-white dark:bg-[#150709] border-2 border-burgundy/40 dark:border-burgundy/60 rounded-xl shadow-xs space-y-3"
+                    >
+                      <div>
+                        <span className="text-sm font-bold uppercase tracking-wider text-burgundy dark:text-[#E89BA5] block">
+                          Team Invitation
+                        </span>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-[#FAF6F3]">{inv.teamName}</h3>
+                        <p className="text-base text-slate-600 dark:text-slate-300 mt-1">
+                          Invited by <span className="font-semibold text-slate-800 dark:text-[#FAF6F3]">{inv.leadName}</span> ({inv.leadEmail})
+                        </p>
+                      </div>
+
+                      <div className="text-sm bg-slate-50 dark:bg-[#1C0A0D] p-2.5 rounded border border-slate-200 dark:border-[#3D1418] text-slate-700 dark:text-slate-300 space-y-1">
+                        <div>
+                          <span className="font-bold">Track:</span> {inv.vertical}
+                        </div>
+                        <div>
+                          <span className="font-bold">Problem Statement:</span> {inv.problemStatementId}
+                        </div>
+                      </div>
+
+                      <p className="text-base text-slate-500 dark:text-slate-400 leading-snug">
+                        Accepting this invitation confirms you as a full team member and unlocks the
+                        dossier for {inv.problemStatementId}. You cannot join other teams once accepted.
+                      </p>
+
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          disabled={isProcessing}
+                          onClick={() => handleInviteResponse(inv.invitationId, 'accept')}
+                          className="flex-1 px-4 py-2 bg-burgundy text-white text-sm font-semibold rounded hover:bg-burgundy-deep transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                        >
+                          {isProcessing ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>Joining Team...</span>
+                            </>
+                          ) : (
+                            <span>Accept Invitation</span>
+                          )}
+                        </button>
+                        <button
+                          disabled={isProcessing}
+                          onClick={() => handleInviteResponse(inv.invitationId, 'decline')}
+                          className="px-4 py-2 bg-slate-100 dark:bg-[#1C0A0D] hover:bg-slate-200 dark:hover:bg-[#250D11] text-slate-700 dark:text-slate-300 text-sm font-semibold rounded transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -717,21 +815,14 @@ export default function HackathonWorkspacePage() {
                       <span>Track: <span className="font-semibold text-slate-800 dark:text-[#FAF6F3]">{team.vertical}</span></span>
                       <span>·</span>
                       <span>Problem Statement: <span className="font-mono font-bold text-burgundy dark:text-[#E89BA5]">{team.problem_statement_id}</span></span>
-                      {!isFinalized ? (
-                        <button
-                          type="button"
-                          onClick={handleToggleChangePS}
-                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border border-burgundy/30 bg-burgundy/5 dark:bg-burgundy/20 hover:bg-burgundy/10 text-burgundy dark:text-[#E89BA5] text-xs font-semibold transition-all cursor-pointer ml-0 sm:ml-1 mt-1 sm:mt-0"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                          <span>{isChangingPS ? 'Close Switcher' : 'Change Problem Statement'}</span>
-                        </button>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-semibold bg-slate-100 dark:bg-[#1C0A0D] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-[#3D1418] ml-0 sm:ml-1 mt-1 sm:mt-0">
-                          <Lock className="w-3 h-3 text-slate-400" />
-                          <span>Track Locked</span>
-                        </span>
-                      )}
+                      <button
+                        type="button"
+                        onClick={handleToggleChangePS}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border border-burgundy/30 bg-burgundy/5 dark:bg-burgundy/20 hover:bg-burgundy/10 text-burgundy dark:text-[#E89BA5] text-xs font-semibold transition-all cursor-pointer ml-0 sm:ml-1 mt-1 sm:mt-0"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>{isChangingPS ? 'Close Switcher' : 'Change Problem Statement'}</span>
+                      </button>
                     </div>
                   </div>
 
@@ -913,12 +1004,26 @@ export default function HackathonWorkspacePage() {
                           : 'Manage your roster. Add, remove, or resend invites freely before finalization (min 2, max 6 accepted members).'}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-mono text-xs px-2.5 py-1 rounded-md bg-slate-100 dark:bg-[#1C0A0D] border border-slate-200 dark:border-[#3D1418] text-slate-700 dark:text-slate-300 font-semibold">
                         {confirmedMembers.length}/6 Confirmed
                         {pendingMembers.length > 0 ? ` · ${pendingMembers.length} Pending` : ''}
                         {declinedMembers.length > 0 ? ` · ${declinedMembers.length} Declined` : ''}
                       </span>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setIsRefreshingRoster(true);
+                          await mutateTeam();
+                          setTimeout(() => setIsRefreshingRoster(false), 500);
+                        }}
+                        disabled={isRefreshingRoster}
+                        title="Check for newly accepted teammate invitations"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 dark:bg-[#1C0A0D] hover:bg-slate-200 dark:hover:bg-[#250D11] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#3D1418] text-xs font-semibold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingRoster ? 'animate-spin' : ''}`} />
+                        <span>Refresh Roster</span>
+                      </button>
                       {canAddMore && (
                         <button
                           type="button"
@@ -940,14 +1045,64 @@ export default function HackathonWorkspacePage() {
 
                   {/* Feedback alerts */}
                   {memberActionMsg && (
-                    <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs flex items-center justify-between gap-2 animate-in fade-in">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                        <span>{memberActionMsg}</span>
+                    <div className="p-4 rounded-xl bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-xs space-y-2.5 animate-in fade-in">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-2.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                          <div className="space-y-1">
+                            <p className="font-bold text-slate-900 dark:text-[#FAF6F3] text-sm">
+                              {memberActionMsg}
+                            </p>
+                            <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-xs">
+                              <strong>Important:</strong> Invitations are delivered in-platform (no external email is sent). Your teammate must sign into this portal to see and accept their invitation.
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMemberActionMsg('');
+                            setRecentInvitedEmail(null);
+                          }}
+                          className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
+                          aria-label="Dismiss notification"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                       </div>
-                      <button type="button" onClick={() => setMemberActionMsg('')} className="p-1 text-emerald-600 hover:text-emerald-800 cursor-pointer">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+
+                      {recentInvitedEmail && (
+                        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-emerald-200/60 dark:border-emerald-900/40">
+                          <button
+                            type="button"
+                            onClick={() => handleCopyInviteMessage(recentInvitedEmail)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-colors cursor-pointer shadow-xs"
+                          >
+                            {copiedInviteEmail === recentInvitedEmail ? (
+                              <>
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Invite Message Copied!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3.5 h-3.5" />
+                                <span>Copy Invite Message</span>
+                              </>
+                            )}
+                          </button>
+
+                          <a
+                            href={getWhatsAppShareUrl(recentInvitedEmail)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/60 dark:hover:bg-emerald-900 text-emerald-950 dark:text-emerald-100 border border-emerald-300 dark:border-emerald-700 font-semibold text-xs transition-colors"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5 text-[#25D366]" />
+                            <span>Share on WhatsApp</span>
+                            <ExternalLink className="w-3 h-3 text-[#25D366]" />
+                          </a>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -1001,6 +1156,9 @@ export default function HackathonWorkspacePage() {
                           <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
+                      <p className="text-[11.5px] text-slate-600 dark:text-slate-300 leading-relaxed bg-white/70 dark:bg-[#150709] p-2.5 rounded-lg border border-slate-200/80 dark:border-[#3D1418]">
+                        <strong>In-Portal Invites:</strong> No external email is sent. After you send the invite, your teammate simply signs into <span className="font-mono font-semibold text-burgundy dark:text-[#E89BA5]">qffsrmap2026.com/learning/hackathon</span> with their registered Gmail to accept.
+                      </p>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <div>
                           <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -1115,11 +1273,11 @@ export default function HackathonWorkspacePage() {
                           className="px-4 py-1.5 text-xs font-bold rounded bg-burgundy hover:bg-burgundy-deep text-white transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                         >
                           {isSubmittingNewMember ? (
-                            <span>Dispatching...</span>
+                            <span>Inviting...</span>
                           ) : (
                             <>
                               <Send className="w-3.5 h-3.5" />
-                              <span>Dispatch Invitation</span>
+                              <span>Send In-Portal Invite</span>
                             </>
                           )}
                         </button>
@@ -1131,10 +1289,14 @@ export default function HackathonWorkspacePage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     {team.members?.map((m: any) => {
                       const isLeader = m.role === 'leader';
+                      const isPending = m.status === 'invited';
+                      const isLeaderOrAdmin = team.currentUserRole === 'leader' || Boolean(sessionUser?.isAdmin);
                       const canRemove =
                         !isFinalized &&
-                        ((team.currentUserRole === 'leader' && !isLeader) ||
-                          (m.email?.toLowerCase() === sessionUser?.email?.toLowerCase() && !isLeader));
+                        !isLeader &&
+                        (isLeaderOrAdmin ||
+                          isPending ||
+                          m.email?.toLowerCase() === sessionUser?.email?.toLowerCase());
 
                       return (
                         <div
@@ -1166,31 +1328,66 @@ export default function HackathonWorkspacePage() {
                           </div>
 
                           <div className="pt-2 border-t border-slate-200/60 dark:border-[#3D1418] flex items-center justify-between gap-2">
-                            <div>
+                            <div className="flex-1 min-w-0">
                               {m.status === 'accepted' ? (
                                 <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
                                   <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> Confirmed
                                 </span>
                               ) : m.status === 'invited' ? (
-                                <div className="flex items-center gap-1.5">
-                                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-400">
-                                    <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" /> Pending
-                                  </span>
-                                  {team.currentUserRole === 'leader' && !isFinalized && (
+                                <div className="space-y-1.5 w-full">
+                                  <div className="flex items-center justify-between gap-1.5">
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 dark:text-amber-400">
+                                      <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                                      <span>Pending Acceptance</span>
+                                    </span>
+                                    {!isFinalized && (isLeaderOrAdmin || team.currentUserStatus === 'accepted') && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleResendInvite(m.id, m.email)}
+                                        disabled={resendingMemberId === m.id}
+                                        title="Refresh in-portal invitation"
+                                        className="text-[10px] font-semibold text-slate-500 hover:text-burgundy dark:hover:text-[#E89BA5] underline cursor-pointer"
+                                      >
+                                        {resendingMemberId === m.id ? 'Refreshing...' : 'Refresh'}
+                                      </button>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 pt-0.5 border-t border-slate-100 dark:border-[#3D1418]/60">
                                     <button
                                       type="button"
-                                      onClick={() => handleResendInvite(m.id, m.email)}
-                                      disabled={resendingMemberId === m.id}
-                                      className="text-[10px] font-bold text-burgundy dark:text-[#E89BA5] underline hover:text-burgundy-deep cursor-pointer"
+                                      onClick={() => handleCopyInviteMessage(m.email)}
+                                      title="Copy invite text for this teammate"
+                                      className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-burgundy dark:text-[#E89BA5] hover:underline cursor-pointer"
                                     >
-                                      {resendingMemberId === m.id ? 'Resending...' : 'Resend'}
+                                      {copiedInviteEmail === m.email ? (
+                                        <>
+                                          <Check className="w-3 h-3 text-emerald-600" />
+                                          <span>Copied!</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Copy className="w-3 h-3" />
+                                          <span>Copy Invite</span>
+                                        </>
+                                      )}
                                     </button>
-                                  )}
+                                    <span className="text-slate-300 dark:text-slate-600 text-[10px]">·</span>
+                                    <a
+                                      href={getWhatsAppShareUrl(m.email)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      title="Share invite via WhatsApp"
+                                      className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-emerald-700 dark:text-emerald-400 hover:underline"
+                                    >
+                                      <MessageCircle className="w-3 h-3 text-[#25D366]" />
+                                      <span>WhatsApp</span>
+                                    </a>
+                                  </div>
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-1.5">
                                   <span className="text-[11px] text-rose-600 dark:text-rose-400 font-semibold">Declined</span>
-                                  {team.currentUserRole === 'leader' && !isFinalized && (
+                                  {!isFinalized && (isLeaderOrAdmin || team.currentUserStatus === 'accepted') && (
                                     <button
                                       type="button"
                                       onClick={() => handleResendInvite(m.id, m.email)}
@@ -1204,17 +1401,17 @@ export default function HackathonWorkspacePage() {
                               )}
                             </div>
 
-                            {/* Remove button */}
+                            {/* Remove / Cancel Invite button */}
                             {canRemove && (
                               <button
                                 type="button"
                                 onClick={() => handleRemoveMember(m.id, m.email)}
                                 disabled={removingMemberId === m.id}
-                                title="Remove from team"
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold text-rose-600 hover:text-rose-800 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors"
+                                title={isPending ? 'Cancel in-portal invitation' : 'Remove from team'}
+                                className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded text-[10.5px] font-semibold text-rose-600 hover:text-rose-800 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors"
                               >
-                                <Trash2 className="w-3 h-3" />
-                                <span>{removingMemberId === m.id ? 'Removing...' : 'Remove'}</span>
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>{removingMemberId === m.id ? 'Removing...' : isPending ? 'Cancel' : 'Remove'}</span>
                               </button>
                             )}
                           </div>
@@ -1384,21 +1581,14 @@ export default function HackathonWorkspacePage() {
                     </p>
                   </div>
 
-                  {!isFinalized ? (
-                    <button
-                      type="button"
-                      onClick={handleToggleChangePS}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-burgundy/30 bg-burgundy/5 dark:bg-burgundy/20 hover:bg-burgundy/10 text-burgundy dark:text-[#E89BA5] text-xs font-semibold transition-all cursor-pointer self-start sm:self-auto shadow-2xs"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                      <span>{isChangingPS ? 'Close Switcher' : 'Change Problem Statement'}</span>
-                    </button>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold bg-slate-100 dark:bg-[#1C0A0D] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-[#3D1418] self-start sm:self-auto">
-                      <Lock className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Track Locked</span>
-                    </span>
-                  )}
+                  <button
+                    type="button"
+                    onClick={handleToggleChangePS}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-burgundy/30 bg-burgundy/5 dark:bg-burgundy/20 hover:bg-burgundy/10 text-burgundy dark:text-[#E89BA5] text-xs font-semibold transition-all cursor-pointer self-start sm:self-auto shadow-2xs"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>{isChangingPS ? 'Close Switcher' : 'Change Problem Statement'}</span>
+                  </button>
                 </div>
 
                 {selectedPSObj ? (
@@ -1622,6 +1812,11 @@ export default function HackathonWorkspacePage() {
                       )}
                     </div>
 
+                    {/* In-Portal Invitation Notice */}
+                    <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#1A090C] border border-slate-200 dark:border-[#3D1418] text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      <span className="font-semibold text-slate-900 dark:text-[#FAF6F3]">How invitations work:</span> Invitations are managed entirely in-portal (no external email is dispatched). Once you create your team, your teammates must log into <span className="font-mono font-semibold text-burgundy dark:text-[#E89BA5]">qffsrmap2026.com/learning/hackathon</span> using their registered Gmail to accept their invitation.
+                    </div>
+
                     {/* Submit Button */}
                     <button
                       type="button"
@@ -1630,7 +1825,7 @@ export default function HackathonWorkspacePage() {
                       className="w-full px-4 py-2.5 bg-burgundy text-white text-sm font-bold rounded-lg hover:bg-burgundy-deep transition-colors shadow-xs disabled:opacity-50 flex items-center justify-center gap-2 mt-4 cursor-pointer"
                     >
                       {isSubmittingTeam ? (
-                        'Creating Team & Sending Invitations...'
+                        'Creating Team & Dispatching In-Portal Invites...'
                       ) : (
                         <span className="flex items-center gap-1.5">
                           <Users className="w-4 h-4" />

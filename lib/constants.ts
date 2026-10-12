@@ -7,3 +7,7 @@ export const REGISTRATION_URL =
 
 export const WHATSAPP_COMMUNITY_URL =
   'https://chat.whatsapp.com/HoLFUpcm46L0qDE6VBdboW';
+
+export const HACKATHON_WORKSPACE_URL =
+  'https://qffsrmap2026.com/learning/hackathon';
+

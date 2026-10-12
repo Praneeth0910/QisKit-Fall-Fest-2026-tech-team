@@ -2,7 +2,8 @@
 ### Official Digital Web Platform
 
 **Live Platform (Primary Domain):** [https://www.qffsrmap2026.com/](https://www.qffsrmap2026.com/)  
-**Verified Production Mirror (Campus Direct / Fallback URL):** [https://qis-kit-fall-fest-2026.vercel.app/](https://qis-kit-fall-fest-2026.vercel.app/)  
+**Official Learning & Registration Hub:** [https://www.qffsrmap2026.com/learning](https://www.qffsrmap2026.com/learning)  
+**Verified Production Mirror (Campus Direct / Fallback URL):** [https://qis-kit-fall-fest-2026.vercel.app/](https://qis-kit-fall-fest-2026.vercel.app/) (Learning: [https://qis-kit-fall-fest-2026.vercel.app/learning](https://qis-kit-fall-fest-2026.vercel.app/learning))  
 **Host Category:** Partner Plus Host  
 **Milestone Theme:** A Decade of Quantum on Cloud (Celebrating 10 Years of Cloud Quantum Computing)  
 **Event Timeline:** Online Phase: 5–13 October 2026 | Offline Phase: 26–30 October 2026  
@@ -18,9 +19,9 @@ Built to international quantum symposium standards as part of IBM Quantum's glob
 
 ### Production Endpoints & Campus Access
 
-* **Primary Custom Domain (`qffsrmap2026.com`):** Serves global public traffic, search engine crawlers, and external visitors. Protected by Cloudflare and Vercel.
-* **Campus Direct Mirror (`qis-kit-fall-fest-2026.vercel.app`):** Direct Vercel production deployment. Use this URL for distribution on the SRM University-AP campus network and for registration links in campus groups. Because the campus Check Point firewall sinkholes newly registered domains like `qffsrmap2026.com` to `62.0.58.94` (`ERR_QUIC_PROTOCOL_ERROR`), the `.vercel.app` mirror provides 100% reliable, zero-configuration access for students and faculty across all campus Wi-Fi access points and labs.
-* **Developer Client Bypass:** Developers on campus Wi-Fi can access `qffsrmap2026.com` directly by enabling **Secure DNS (DoH)** in their browser (`chrome://settings/security` -> select Cloudflare 1.1.1.1 or Google Public DNS).
+* **Primary Custom Domain (`qffsrmap2026.com`):** Serves all public traffic, student registrations, and on-campus users. Verified fully operational across SRM University-AP campus Wi-Fi, dorms, and laboratories.
+* **Official Learning & Registration Hub:** `https://www.qffsrmap2026.com/learning`
+* **Production Mirror (Internal Reference):** `https://qis-kit-fall-fest-2026.vercel.app/` (Learning: `https://qis-kit-fall-fest-2026.vercel.app/learning`)
 
 ---
 

@@ -207,7 +207,7 @@ export const offlineSchedule: Day[] = [
         time: "10:30 AM",
         end: "12:00 PM",
         title: "Team Registration & Mentor Assignment",
-        description: "Finalize team formations (1–4 members) and meet assigned technical mentors.",
+        description: "Finalize team formations (2–6 members) and meet assigned technical mentors.",
         track: "Hackathon",
         level: "All levels",
         location: "Build Hall · Innovation Center",

@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
       const nextVal = !currentNextRound;
       recordToSave.is_next_round = nextVal;
       if (nextVal) {
-        if (recordToSave.status === 'pending' || recordToSave.status === 'under_review') {
+        if (recordToSave.status === 'pending' || recordToSave.status === 'under_review' || recordToSave.status === 'rejected') {
           recordToSave.status = 'shortlisted';
         }
       } else {
@@ -164,11 +164,31 @@ export async function POST(request: NextRequest) {
           recordToSave.status = 'under_review';
         }
       }
+    } else if (action === 'toggle_reject') {
+      const isCurrentlyRejected = recordToSave.status === 'rejected';
+      if (isCurrentlyRejected) {
+        // Un-reject: return to under_review if already inspected, or pending
+        recordToSave.status = recordToSave.downloaded ? 'under_review' : 'pending';
+      } else {
+        // Reject: mark as rejected and clear next round shortlist
+        recordToSave.status = 'rejected';
+        recordToSave.is_next_round = false;
+      }
     } else if (action === 'update_evaluation') {
-      if (status !== undefined) recordToSave.status = status as EvaluationStatus;
+      if (status !== undefined) {
+        recordToSave.status = status as EvaluationStatus;
+        if (status === 'rejected') {
+          recordToSave.is_next_round = false;
+        }
+      }
       if (score !== undefined) recordToSave.score = score !== null ? Number(score) : null;
       if (rubric_scores !== undefined) recordToSave.rubric_scores = rubric_scores as EvaluationRubric;
-      if (is_next_round !== undefined) recordToSave.is_next_round = Boolean(is_next_round);
+      if (is_next_round !== undefined) {
+        recordToSave.is_next_round = Boolean(is_next_round);
+        if (recordToSave.is_next_round && recordToSave.status === 'rejected') {
+          recordToSave.status = 'shortlisted';
+        }
+      }
     } else if (action === 'add_comment') {
       if (!comment_text || !comment_text.trim()) {
         return NextResponse.json({ error: 'comment_text cannot be empty.' }, { status: 400 });

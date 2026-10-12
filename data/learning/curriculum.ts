@@ -187,10 +187,10 @@ export const CURRICULUM_SESSIONS: LectureSession[] = [
     id: 'session-6',
     day: 3,
     sessionNumber: 6,
-    title: 'Session 6: Quantum Cyber Security, Cryptography & Hackathon Release',
+    title: 'Session 6: Quantum Cyber Security & Cryptography',
     dateStr: 'Day 3 · Saturday, 10 October 2026',
-    timeStr: '02:00 PM – 04:30 PM IST (Part 1: Math & Shor · Part 2: PQC · Part 3: Hackathon)',
-    duration: '2 Hours 30 Mins (Math Foundations, Shor/Grover, PQC & Hackathon)',
+    timeStr: '02:00 PM – 04:30 PM IST (Math Foundations, Shor/Grover & PQC)',
+    duration: '2 Hours 30 Mins (Math Foundations, Shor/Grover & PQC)',
     youtubeId: 'ev-L2YibRR4',
     youtubeUrl: 'https://www.youtube.com/live/ev-L2YibRR4',
     defaultStartSeconds: 14277,
@@ -201,24 +201,8 @@ export const CURRICULUM_SESSIONS: LectureSession[] = [
       bio: 'Dr. Sazzad Ali Biswas is an Assistant Professor of Mathematics at SRM University-AP. He holds B.Sc. and M.Sc. degrees from Jadavpur University and a Ph.D. from the University of Hyderabad (2016). He has held prestigious fellowships and visiting appointments at CMI, Humboldt University of Berlin, TIFR Mumbai, HRI Allahabad, and MSRI Berkeley, specializing in number theory, algebraic geometry, and cryptographic algorithms.',
       websiteUrl: 'https://srmap.edu.in',
     },
-    coSpeakers: [
-      {
-        name: 'Dr. Sajal Mukherjee',
-        role: 'Assistant Professor, Department of Mathematics',
-        institution: 'SRM University-AP',
-        bio: 'Dr. Sajal Mukherjee is an Assistant Professor at SRM University-AP specializing in post-quantum cryptographic primitives, lattice-based cryptography, and mathematical cybersecurity architectures.',
-        websiteUrl: 'https://srmap.edu.in',
-      },
-      {
-        name: 'Gyanendra (Gyan)',
-        role: 'Lead Student Organizer & Session Host',
-        institution: 'SRM University-AP',
-        bio: 'Technical lead for Qiskit Fall Fest 2026 at SRM University-AP, overseeing platform engineering, hackathon operations, and student developer enablement.',
-        websiteUrl: 'https://srmap.edu.in',
-      },
-    ],
     description:
-      'The definitive cryptographic masterclass for the quantum era delivered by Dr. Sazzad Ali Biswas and Dr. Sajal Mukherjee, followed by the official Hackathon Release and Closing Ceremony. Part 1 establishes mathematical foundations: residue class rings Z/nZ, Euler’s totient function phi(n), computational complexity O(n^2), the RSA cryptosystem with live numerical examples (p=11, q=13, n=143, e=7, d=103), the Discrete Logarithm Problem (DLP), Diffie-Hellman Key Exchange, and Elliptic Curve Cryptography (short Weierstrass form y^2 = x^3 + ax + b, 4a^3 + 27b^2 ≠ 0). Part 2 analyzes quantum algorithmic threats: Shor’s order finding providing exponential speedup O((log N)^3) to shatter RSA and ECC, and Grover’s quadratic search halving symmetric key security (AES-128 → 64 bits; counteracted by AES-256). Study Quantum Key Distribution (BB84 rectilinear/diagonal bases, no-cloning theorem, 25% eavesdropping error, ~11% QBER threshold) and NIST FIPS 203/204/205 Post-Quantum Cryptography standards (ML-KEM, ML-DSA, SLH-DSA, FN-DSA). Part 3 presents the Flagship Hackathon Announcement on Algorithm ↔ Architecture Co-Design across 5 tracks and 20 problem statements.',
+      'The definitive mathematical masterclass on quantum cyber security and cryptography delivered by Dr. Sazzad Ali Biswas. Establishes core mathematical foundations: residue class rings Z/nZ, Euler’s totient function phi(n), computational complexity, RSA encryption with live numerical calculations, the Discrete Logarithm Problem (DLP), Diffie-Hellman Key Exchange, and Elliptic Curve Cryptography (ECC). Evaluates quantum threats including Shor’s polynomial-time factoring and Grover’s quadratic search, examines Quantum Key Distribution (BB84 protocol, no-cloning theorem, ~11% QBER threshold), and surveys NIST Post-Quantum Cryptography standards (ML-KEM, ML-DSA, SLH-DSA).',
     prerequisites: 'Sessions 1–4. Familiarity with modular arithmetic, prime numbers, group theory, and quantum state measurement.',
     learnPoints: [
       'Number-theoretic foundations: Residue rings Z/nZ, Euler’s totient phi(n), Chinese Remainder Theorem (4x RSA acceleration), and Big-O computational complexity',
@@ -229,6 +213,8 @@ export const CURRICULUM_SESSIONS: LectureSession[] = [
       'NIST Post-Quantum Cryptography standards: FIPS 203 (ML-KEM / Kyber), FIPS 204 (ML-DSA / Dilithium), FIPS 205 (SLH-DSA / SPHINCS+), and CNSA 2.0 migration',
       'Official Hackathon Launch: Algorithm-Architecture Co-Design, Processors A/B/C/D, 5 tracks, and 100-point evaluation rubric',
     ],
+    slidesUrl:
+      'https://jpciyrodeppqpkwqblpk.supabase.co/storage/v1/object/public/media/session-materials/session-6/Quantum_Cybersecurity_Cryptography.pdf',
   },
 ];
 
@@ -337,8 +323,8 @@ export const ONLINE_PROGRAMME_SCHEDULE: DayProgramme[] = [
         sessionId: 'session-1',
       },
       {
-        time: 'Deadline: 12 Oct (11:59 PM)',
-        duration: 'Due 12 Oct',
+        time: 'Deadline: 14 Oct (11:59 PM)',
+        duration: 'Due 14 Oct',
         title: 'Online Game: Tech Reels Competition',
         speaker: 'Open to all participants',
         speakerRole: 'Accessible via LMS / Link',
@@ -416,8 +402,8 @@ export const ONLINE_PROGRAMME_SCHEDULE: DayProgramme[] = [
         sessionId: 'session-4',
       },
       {
-        time: 'Deadline: 12 Oct (11:59 PM)',
-        duration: 'Due 12 Oct',
+        time: 'Deadline: 14 Oct (11:59 PM)',
+        duration: 'Due 14 Oct',
         title: 'Online Game: Digital Poster Creation',
         speaker: 'Open to all participants',
         speakerRole: 'Accessible via LMS / Link',
@@ -452,9 +438,9 @@ export const ONLINE_PROGRAMME_SCHEDULE: DayProgramme[] = [
       {
         time: '13:55 - 15:45',
         duration: '110 min',
-        title: 'Session 6: Quantum Cyber Security, Cryptography & Post-Quantum Standards',
-        speaker: 'Dr. Sazzad Ali Biswas & Dr. Sajal Mukherjee',
-        speakerRole: 'Assistant Professors, Department of Mathematics, SRM University-AP',
+        title: 'Session 6: Quantum Cyber Security & Cryptography',
+        speaker: 'Dr. Sazzad Ali Biswas',
+        speakerRole: 'Assistant Professor, Department of Mathematics, SRM University-AP',
         type: 'session',
         sessionId: 'session-6',
       },
@@ -493,8 +479,8 @@ export const ONLINE_PROGRAMME_SCHEDULE: DayProgramme[] = [
         sessionId: 'session-6',
       },
       {
-        time: 'Deadline: 12 Oct (11:59 PM)',
-        duration: 'Due 12 Oct',
+        time: 'Deadline: 14 Oct (11:59 PM)',
+        duration: 'Due 14 Oct',
         title: 'Online Game: Essay Competition',
         speaker: 'Open to all participants',
         speakerRole: 'Accessible via LMS / Link',

@@ -125,7 +125,7 @@ export function LearningSidebar() {
     if (session) {
       fetchSidebarProgress();
     }
-  }, [pathname, searchParams, session, fetchSidebarProgress]);
+  }, [pathname, session, fetchSidebarProgress]);
 
   useEffect(() => {
     const handleProgressUpdate = () => {
@@ -149,8 +149,8 @@ export function LearningSidebar() {
 
   const fetchSession = React.useCallback(async () => {
     try {
-      const res = await fetch('/api/auth/session');
-      const data = await res.json();
+      const { getClientSession } = await import('@/lib/session-client');
+      const data = await getClientSession();
       if (data.session) {
         setSession(data.session);
       } else {
@@ -617,7 +617,7 @@ export function LearningSidebar() {
                           : 'bg-burgundy/10 text-burgundy dark:bg-burgundy/20 dark:text-[#E89BA5] border border-burgundy/20 dark:border-burgundy/40'
                       )}
                     >
-                      12 Oct
+                      14 Oct
                     </span>
                   )}
                 </Link>

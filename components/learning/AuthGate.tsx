@@ -41,6 +41,7 @@ export function AuthGate({ children, onSessionChange }: AuthGateProps) {
     setSession(newSession);
     onSessionChange?.(newSession);
     if (typeof window !== 'undefined') {
+      import('@/lib/session-client').then((m) => m.invalidateClientSessionCache());
       window.dispatchEvent(new CustomEvent('qff_auth_change', { detail: newSession }));
     }
   }
@@ -144,9 +145,9 @@ export function AuthGate({ children, onSessionChange }: AuthGateProps) {
     async function checkCurrentSession() {
       try {
         setIsLoading(true);
-        // 1. Check server session cookie first
-        const res = await fetch('/api/auth/session');
-        const data = await res.json();
+        // 1. Check server session cookie first via deduplicated client cache
+        const { getClientSession } = await import('@/lib/session-client');
+        const data = await getClientSession();
 
         if (data.authenticated && data.session) {
           if (isMounted) {

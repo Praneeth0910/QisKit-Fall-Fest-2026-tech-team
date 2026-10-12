@@ -28,6 +28,7 @@ import {
   Code2,
   ListVideo,
   RotateCcw,
+  Download,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -70,7 +71,8 @@ export default function SessionPlayerPage() {
     if (SESSION_TRANSCRIPTS[sessionId]?.sections) {
       const initialExpanded: Record<string, boolean> = {};
       SESSION_TRANSCRIPTS[sessionId].sections.forEach((sec) => {
-        initialExpanded[sec.id] = true;
+        // Start collapsed for session-6 to avoid visual clutter since the PDF contains the primary mathematical material
+        initialExpanded[sec.id] = sessionId !== 'session-6';
       });
       setExpandedSections(initialExpanded);
     }
@@ -446,6 +448,50 @@ export default function SessionPlayerPage() {
                 {session.description}
               </p>
 
+              {/* Primary Presentation Deck & Materials - Don Norman High-Affordance Design */}
+              {session.slidesUrl && (
+                <div className="p-4 rounded-xl border border-burgundy/25 dark:border-[#5C1E26] bg-slate-50/70 dark:bg-[#1C0A0D]/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-lg bg-burgundy/10 dark:bg-burgundy/25 border border-burgundy/20 dark:border-[#5C1E26] flex items-center justify-center shrink-0 text-burgundy dark:text-[#E89BA5]">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0 space-y-0.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-burgundy dark:text-[#E89BA5]">
+                          Official Lecture Slides & Talk Deck
+                        </span>
+                        {session.slidesUrl.toLowerCase().includes('.pdf') && (
+                          <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-200/80 dark:bg-[#2A0E13] text-slate-700 dark:text-slate-300 font-semibold">
+                            PDF Document
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-[#FAF6F3] truncate">
+                        {session.speaker.name} — Presentation Slides & Lecture Notes
+                      </h3>
+                      <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400">
+                        {sessionId === 'session-6'
+                          ? 'Complete mathematical proofs, RSA calculations, and quantum cryptography slide material.'
+                          : 'Official slides and companion learning materials for this session.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <a
+                      href={session.slidesUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-burgundy text-white hover:bg-burgundy-deep text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Open Talk PDF</span>
+                      <ExternalLink className="w-3 h-3 opacity-75" />
+                    </a>
+                  </div>
+                </div>
+              )}
+
               {/* Key Learning Points */}
               <div className="pt-3 border-t border-slate-100 dark:border-[#3D1418]">
                 <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-burgundy dark:text-[#E89BA5] block mb-2">
@@ -526,6 +572,11 @@ export default function SessionPlayerPage() {
                     <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                       {transcriptData.overview}
                     </p>
+                    {sessionId === 'session-6' && (
+                      <div className="p-3 rounded-lg bg-burgundy/5 dark:bg-burgundy/15 border border-burgundy/15 text-[11px] text-slate-700 dark:text-slate-300">
+                        <strong className="font-semibold text-slate-900 dark:text-[#FAF6F3]">Recommended:</strong> Complete mathematical definitions, modular arithmetic proofs, and quantum algorithm slides are detailed in Dr. Biswas&apos;s presentation deck above. The transcript sections below are collapsed by default as an optional lecture reference.
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0 self-start md:self-center">
@@ -809,7 +860,9 @@ export default function SessionPlayerPage() {
                       >
                         <span className="flex items-center gap-2">
                           <FileText className="w-4 h-4 text-burgundy dark:text-[#E89BA5]" />
-                          Tutorial Code & Notebooks
+                          {session.slidesUrl.toLowerCase().includes('.pdf')
+                            ? 'Presentation Slides & Talk Notes (.pdf)'
+                            : 'Tutorial Code & Notebooks'}
                         </span>
                         <ExternalLink className="w-3 h-3 text-slate-400" />
                       </a>

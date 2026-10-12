@@ -22,6 +22,7 @@ import {
   Clock,
   Sliders,
   MessageSquare,
+  XCircle,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { EvaluationDrawer } from './EvaluationDrawer';
@@ -49,6 +50,7 @@ interface Stats {
   essay: number;
   documentsCount: number;
   shortlistedCount?: number;
+  rejectedCount?: number;
   evaluatedCount?: number;
   downloadedCount?: number;
 }
@@ -64,7 +66,7 @@ export function AdminCompetitionsView() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'reels' | 'poster' | 'essay' | 'documents' | 'shortlisted' | 'downloaded'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'reels' | 'poster' | 'essay' | 'documents' | 'shortlisted' | 'rejected' | 'downloaded'>('all');
   const [feedbackMsg, setFeedbackMsg] = useState<{ text: string; isError: boolean } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -183,6 +185,46 @@ export function AdminCompetitionsView() {
     }
   };
 
+  // Quick Action: Toggle Rejection
+  const handleQuickToggleReject = async (sub: CompetitionSubmissionItem) => {
+    try {
+      setActionInProgressId(sub.id);
+      const res = await fetch('/api/admin/evaluations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: sub.competition_type,
+          target_id: sub.id,
+          action: 'toggle_reject',
+        }),
+      });
+
+      const json = await res.json();
+      if (json.success && json.evaluation) {
+        setSubmissions((prev) =>
+          prev.map((s) => (s.id === sub.id ? { ...s, evaluation: json.evaluation } : s))
+        );
+        const wasRejected = json.evaluation.status === 'rejected';
+        setFeedbackMsg({
+          text: wasRejected
+            ? `Submission for ${sub.email} marked as rejected.`
+            : `Rejection cleared for ${sub.email} (restored to review).`,
+          isError: false,
+        });
+      } else {
+        setFeedbackMsg({
+          text: json.error || 'Failed to update rejection status.',
+          isError: true,
+        });
+      }
+    } catch (err) {
+      console.error('Error toggling competition rejection:', err);
+      setFeedbackMsg({ text: 'Network error updating rejection status.', isError: true });
+    } finally {
+      setActionInProgressId(null);
+    }
+  };
+
   const openEvaluationDesk = (sub: CompetitionSubmissionItem) => {
     setSelectedSubForEvaluation(sub);
     setIsDrawerOpen(true);
@@ -225,11 +267,13 @@ export function AdminCompetitionsView() {
       // Type and evaluation filter
       if (typeFilter === 'documents' && !sub.isDocument) return false;
       if (typeFilter === 'shortlisted' && !sub.evaluation?.is_next_round) return false;
+      if (typeFilter === 'rejected' && sub.evaluation?.status !== 'rejected') return false;
       if (typeFilter === 'downloaded' && !sub.evaluation?.downloaded) return false;
       if (
         typeFilter !== 'all' &&
         typeFilter !== 'documents' &&
         typeFilter !== 'shortlisted' &&
+        typeFilter !== 'rejected' &&
         typeFilter !== 'downloaded' &&
         sub.competition_type !== typeFilter
       ) {
@@ -250,6 +294,19 @@ export function AdminCompetitionsView() {
       return true;
     });
   }, [submissions, typeFilter, searchQuery]);
+
+  const shortlistedCount = useMemo(
+    () => submissions.filter((s) => s.evaluation?.is_next_round).length,
+    [submissions]
+  );
+  const rejectedCount = useMemo(
+    () => submissions.filter((s) => s.evaluation?.status === 'rejected').length,
+    [submissions]
+  );
+  const downloadedCount = useMemo(
+    () => submissions.filter((s) => s.evaluation?.downloaded).length,
+    [submissions]
+  );
 
   const exportCSV = () => {
     if (filteredSubmissions.length === 0) return;
@@ -514,7 +571,19 @@ export function AdminCompetitionsView() {
                 : 'bg-white dark:bg-[#150709] border border-slate-200 dark:border-[#3D1418] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1E0B0E]'
             }`}
           >
-            Round 2 Shortlisted ({stats.shortlistedCount || 0})
+            Round 2 Shortlisted ({shortlistedCount})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setTypeFilter('rejected')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 ${
+              typeFilter === 'rejected'
+                ? 'bg-rose-600 text-white'
+                : 'bg-white dark:bg-[#150709] border border-slate-200 dark:border-[#3D1418] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1E0B0E]'
+            }`}
+          >
+            Rejected ({rejectedCount})
           </button>
 
           <button
@@ -526,7 +595,7 @@ export function AdminCompetitionsView() {
                 : 'bg-white dark:bg-[#150709] border border-slate-200 dark:border-[#3D1418] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1E0B0E]'
             }`}
           >
-            Downloaded ({stats.downloadedCount || 0})
+            Downloaded ({downloadedCount})
           </button>
         </div>
       </div>
@@ -584,6 +653,15 @@ export function AdminCompetitionsView() {
                       </span>
                     );
 
+                  const isDrive = (sub.submission_url || '').toLowerCase().includes('drive.google');
+                  const isInstagram = (sub.submission_url || '').toLowerCase().includes('instagram.com');
+                  const isLinkedIn =
+                    (sub.submission_url || '').toLowerCase().includes('linkedin.com') ||
+                    (sub.submission_url || '').toLowerCase().includes('lnkd.in');
+                  const isYouTube =
+                    (sub.submission_url || '').toLowerCase().includes('youtube.com') ||
+                    (sub.submission_url || '').toLowerCase().includes('youtu.be');
+
                   const formatBadge =
                     sub.documentType === 'pdf' ? (
                       <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800 flex items-center gap-1 w-fit">
@@ -594,6 +672,26 @@ export function AdminCompetitionsView() {
                       <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800 flex items-center gap-1 w-fit">
                         <FileText className="w-3 h-3" />
                         Word (DOCX)
+                      </span>
+                    ) : sub.competition_type === 'reels' && isDrive ? (
+                      <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 flex items-center gap-1 w-fit">
+                        <AlertCircle className="w-3 h-3" />
+                        Drive Link (Needs Social URL)
+                      </span>
+                    ) : sub.competition_type === 'reels' && isInstagram ? (
+                      <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-pink-50 text-pink-700 border border-pink-200 dark:bg-pink-950/40 dark:text-pink-300 dark:border-pink-800 flex items-center gap-1 w-fit">
+                        <ExternalLink className="w-3 h-3" />
+                        Instagram Reel
+                      </span>
+                    ) : sub.competition_type === 'reels' && isLinkedIn ? (
+                      <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800 flex items-center gap-1 w-fit">
+                        <ExternalLink className="w-3 h-3" />
+                        LinkedIn Video
+                      </span>
+                    ) : sub.competition_type === 'reels' && isYouTube ? (
+                      <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-red-50 text-red-700 border border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800 flex items-center gap-1 w-fit">
+                        <ExternalLink className="w-3 h-3" />
+                        YouTube Short
                       </span>
                     ) : (
                       <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 flex items-center gap-1 w-fit">
@@ -671,6 +769,13 @@ export function AdminCompetitionsView() {
                                 Round 2
                               </span>
                             )}
+
+                            {sub.evaluation?.status === 'rejected' && (
+                              <span className="text-[10px] font-bold text-rose-700 dark:text-rose-300 bg-rose-100 dark:bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-300 dark:border-rose-700 flex items-center gap-1">
+                                <XCircle className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                                Rejected
+                              </span>
+                            )}
                           </div>
 
                           <div className="flex items-center gap-2">
@@ -730,6 +835,22 @@ export function AdminCompetitionsView() {
                             <span>{sub.evaluation?.is_next_round ? 'Shortlisted' : 'Shortlist'}</span>
                           </button>
 
+                          {/* Quick Toggle Reject */}
+                          <button
+                            type="button"
+                            onClick={() => handleQuickToggleReject(sub)}
+                            disabled={actionInProgressId === sub.id}
+                            className={`px-2.5 py-1.5 rounded-lg text-2xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                              sub.evaluation?.status === 'rejected'
+                                ? 'bg-rose-600 hover:bg-rose-700 text-white border border-rose-500'
+                                : 'bg-white hover:bg-rose-50 hover:text-rose-700 dark:bg-slate-800 text-slate-700 dark:text-slate-200 dark:hover:bg-rose-950/40 dark:hover:text-rose-300 border border-slate-200 dark:border-slate-700'
+                            }`}
+                            title={sub.evaluation?.status === 'rejected' ? 'Undo rejection (restore to review)' : 'Reject submission'}
+                          >
+                            <XCircle className="w-3 h-3" />
+                            <span>{sub.evaluation?.status === 'rejected' ? 'Rejected' : 'Reject'}</span>
+                          </button>
+
                           {/* Open Review Desk Drawer */}
                           <button
                             type="button"
@@ -738,7 +859,7 @@ export function AdminCompetitionsView() {
                             title="Open evaluation rubric and discussion notes"
                           >
                             <Sliders className="w-3 h-3" />
-                            <span>Review</span>
+                            <span>Review Desk</span>
                           </button>
 
                           {/* Delete Button */}

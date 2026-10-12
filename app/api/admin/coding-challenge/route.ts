@@ -18,15 +18,31 @@ export async function GET(req: NextRequest) {
     const config = await getChallengeConfig();
 
     // 1. Fetch all submissions
-    const { data: submissions, error: subErr } = await supabaseAdmin
+    const { data: rawSubmissions, error: subErr } = await supabaseAdmin
       .from('coding_submissions')
-      .select('id, user_email, challenge_id, status, score, max_score, passed_tests, total_tests, execution_time_ms, submitted_at')
+      .select('id, user_email, challenge_id, source_code, status, score, max_score, passed_tests, total_tests, execution_time_ms, error_message, stdout, stderr, submitted_at')
       .order('submitted_at', { ascending: false })
       .limit(100);
 
     if (subErr) {
       return NextResponse.json({ success: false, error: subErr.message }, { status: 500 });
     }
+
+    // Fetch evaluations for coding challenge
+    const { data: rawEvals } = await supabaseAdmin
+      .from('submission_evaluations')
+      .select('*')
+      .eq('category', 'coding');
+
+    const evalMap: Record<string, any> = {};
+    (rawEvals || []).forEach((ev: any) => {
+      evalMap[ev.target_id] = ev;
+    });
+
+    const submissions = (rawSubmissions || []).map((s) => ({
+      ...s,
+      evaluation: evalMap[s.id] || null,
+    }));
 
     // 2. Compute problem-wise statistics
     const problemStats = QISKIT_CHALLENGES.map((ch) => {

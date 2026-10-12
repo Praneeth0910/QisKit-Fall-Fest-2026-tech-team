@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
           success: true,
-          message: `Invitation re-dispatched to ${trimmedEmail}.`,
+          message: `In-portal invitation restored for ${trimmedEmail}. Ask them to sign into the Hackathon Workspace to accept.`,
           member: resurrected,
         });
       }
@@ -210,7 +210,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Invitation successfully dispatched to ${trimmedEmail}.`,
+      message: `In-portal invitation created for ${trimmedEmail}. Ask them to sign in to accept.`,
       member: {
         ...newMember,
         university: cleanUniversity,
@@ -278,21 +278,24 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 3. Verify caller is team leader or the member removing themselves
+    // 3. Verify caller is team leader, admin, the member removing themselves, or an accepted teammate removing an unaccepted pending invite
     const { data: callerEntry } = await supabase
       .from('team_members')
-      .select('role')
+      .select('role, status')
       .ilike('email', session.email)
       .eq('team_id', teamId)
       .neq('status', 'declined')
       .maybeSingle();
 
     const isLeader = callerEntry?.role === 'leader';
+    const isAdmin = Boolean(session.isAdmin);
     const isSelf = targetMember.email.toLowerCase() === session.email.toLowerCase();
+    const isPendingInvite = targetMember.status === 'invited';
+    const isAcceptedMember = callerEntry?.status === 'accepted' || isLeader;
 
-    if (!isLeader && !isSelf) {
+    if (!isLeader && !isAdmin && !isSelf && !(isPendingInvite && isAcceptedMember)) {
       return NextResponse.json(
-        { error: 'Only the team leader or the member themselves can perform this removal.' },
+        { error: 'Only team leaders, admins, or teammates managing pending invites can remove members.' },
         { status: 403 }
       );
     }
@@ -352,17 +355,21 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    // 2. Verify caller is team leader
+    // 2. Verify caller is team leader, admin, or accepted member
     const { data: callerEntry } = await supabase
       .from('team_members')
-      .select('role')
+      .select('role, status')
       .ilike('email', session.email)
       .eq('team_id', teamId)
       .maybeSingle();
 
-    if (callerEntry?.role !== 'leader') {
+    const isLeader = callerEntry?.role === 'leader';
+    const isAdmin = Boolean(session.isAdmin);
+    const isAcceptedMember = callerEntry?.status === 'accepted';
+
+    if (!isLeader && !isAdmin && !isAcceptedMember) {
       return NextResponse.json(
-        { error: 'Only the team leader can manage invitations.' },
+        { error: 'Only team leaders, admins, or active teammates can manage invitations.' },
         { status: 403 }
       );
     }
@@ -397,7 +404,7 @@ export async function PATCH(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: `Invitation refreshed and dispatched to ${targetMember.email}.`,
+        message: `In-portal invitation refreshed for ${targetMember.email}.`,
         member: updated,
       });
     }

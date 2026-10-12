@@ -72,8 +72,11 @@ export function AdminAnalyticsView() {
 
   useEffect(() => {
     fetchAnalytics();
-    // Auto refresh every 45s while on tab
-    const interval = setInterval(fetchAnalytics, 45000);
+    // Auto refresh every 90s only when tab is actively visible
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      fetchAnalytics();
+    }, 90000);
     return () => clearInterval(interval);
   }, []);
 

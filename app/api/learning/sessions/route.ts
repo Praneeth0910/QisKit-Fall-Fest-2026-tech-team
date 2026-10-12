@@ -78,18 +78,32 @@ export async function GET(request: NextRequest) {
       if (!session) {
         return NextResponse.json({ error: 'Session not found' }, { status: 404 });
       }
-      return NextResponse.json({
-        success: true,
-        session,
-        override: overrides?.[requestedId] || null,
-      });
+      return NextResponse.json(
+        {
+          success: true,
+          session,
+          override: overrides?.[requestedId] || null,
+        },
+        {
+          headers: {
+            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+          },
+        }
+      );
     }
 
-    return NextResponse.json({
-      success: true,
-      sessions: mergedSessions,
-      overrides: overrides || {},
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        sessions: mergedSessions,
+        overrides: overrides || {},
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+        },
+      }
+    );
   } catch (error: any) {
     console.error('Error fetching sessions:', error);
     return NextResponse.json(

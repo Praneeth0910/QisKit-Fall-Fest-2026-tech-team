@@ -23,25 +23,35 @@ export async function GET(request: NextRequest) {
 
     const { quizzes, overrides } = await getAllQuizzes({ admin: allowAdminView });
 
+    const cacheHeaders = allowAdminView
+      ? { 'Cache-Control': 'no-store' }
+      : { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' };
+
     if (sessionId) {
       const quiz = quizzes[sessionId];
       if (!quiz) {
         return NextResponse.json({ error: 'Quiz not found' }, { status: 404 });
       }
 
-      return NextResponse.json({
-        success: true,
-        quiz,
-        override: overrides[sessionId] || null,
-        isLocked: Boolean(quiz.isLocked),
-      });
+      return NextResponse.json(
+        {
+          success: true,
+          quiz,
+          override: overrides[sessionId] || null,
+          isLocked: Boolean(quiz.isLocked),
+        },
+        { headers: cacheHeaders }
+      );
     }
 
-    return NextResponse.json({
-      success: true,
-      quizzes,
-      overrides,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        quizzes,
+        overrides,
+      },
+      { headers: cacheHeaders }
+    );
   } catch (error: any) {
     console.error('[API /api/learning/quizzes] Error fetching quizzes:', error);
     return NextResponse.json(

@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { recordAnalyticsEvent } from '@/lib/analytics-server';
 
+function isBot(userAgent?: string): boolean {
+  if (!userAgent) return false;
+  return /bot|crawler|spider|crawling|headless|lighthouse|pingdom|uptime|slurp|facebookexternalhit|baiduspider|twitterbot|bytespider/i.test(
+    userAgent
+  );
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const userAgent = request.headers.get('user-agent') || undefined;
+
+    // Fast return for bots and automated crawlers to save serverless CPU
+    if (isBot(userAgent)) {
+      return NextResponse.json({ success: true, ignored: true });
+    }
+
     let body: any = null;
     const contentType = request.headers.get('content-type') || '';
 
@@ -21,7 +35,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'event is required' }, { status: 400 });
     }
 
-    const userAgent = request.headers.get('user-agent') || undefined;
     const ip =
       request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       request.headers.get('x-real-ip') ||

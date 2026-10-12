@@ -17,7 +17,8 @@ export function useCurriculumSessions() {
     {
       fallbackData: { success: true, sessions: CURRICULUM_SESSIONS, overrides: {} },
       revalidateOnFocus: true,
-      refreshInterval: 30000, // Auto-revalidate every 30s during event days
+      revalidateIfStale: false,
+      dedupingInterval: 60000,
     }
   );
 

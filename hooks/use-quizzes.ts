@@ -18,7 +18,8 @@ export function useQuizzes(options?: { admin?: boolean }) {
     {
       fallbackData: { success: true, quizzes: SESSION_QUIZZES, overrides: {} },
       revalidateOnFocus: true,
-      refreshInterval: 20000,
+      revalidateIfStale: false,
+      dedupingInterval: 60000,
     }
   );
 

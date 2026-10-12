@@ -14,7 +14,8 @@ export function useCodingChallengeStatus() {
     fetcher,
     {
       revalidateOnFocus: true,
-      refreshInterval: 20000,
+      revalidateIfStale: false,
+      dedupingInterval: 60000,
     }
   );
 

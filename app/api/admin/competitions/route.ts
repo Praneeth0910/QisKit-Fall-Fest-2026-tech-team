@@ -109,6 +109,7 @@ export async function GET(request: NextRequest) {
       essay: enriched.filter((s) => s.competition_type === 'essay').length,
       documentsCount: enriched.filter((s) => s.isDocument).length,
       shortlistedCount: enriched.filter((s) => s.evaluation?.is_next_round).length,
+      rejectedCount: enriched.filter((s) => s.evaluation?.status === 'rejected').length,
       evaluatedCount: enriched.filter((s) => s.evaluation && s.evaluation.status !== 'pending').length,
       downloadedCount: enriched.filter((s) => s.evaluation?.downloaded).length,
     };
