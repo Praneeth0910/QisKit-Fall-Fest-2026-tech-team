@@ -448,7 +448,6 @@ function QiskitChallengeWorkspace() {
 
   useEffect(() => {
     setIsMounted(true);
-    document.documentElement.classList.remove('has-custom-cursor');
     const checkDesktop = () => setIsDesktop(window.innerWidth >= 768);
     checkDesktop();
     window.addEventListener('resize', checkDesktop);

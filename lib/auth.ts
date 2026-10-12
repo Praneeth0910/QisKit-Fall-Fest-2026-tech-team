@@ -48,9 +48,19 @@ export async function getServerSession(): Promise<AuthSession | null> {
       ? 'admin'
       : (whitelist.role as AuthSession['role']) || 'participant';
 
+    const isCleanWhitelistName =
+      Boolean(whitelist.fullName) &&
+      !whitelist.fullName!.includes('|') &&
+      !/^\d{5,}-/.test(whitelist.fullName!);
+
+    const resolvedFullName =
+      (parsed.fullName && !parsed.fullName.includes('|'))
+        ? parsed.fullName
+        : (isCleanWhitelistName ? whitelist.fullName! : (parsed.fullName || whitelist.fullName || email.split('@')[0]));
+
     return {
       email,
-      fullName: parsed.fullName || whitelist.fullName || email.split('@')[0],
+      fullName: resolvedFullName,
       role,
       isAdmin: isSuperAdmin || role === 'admin',
     };

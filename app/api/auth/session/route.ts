@@ -28,11 +28,21 @@ export async function GET(request: NextRequest) {
 
     const role = isSuperAdmin ? 'admin' : whitelist.role || 'participant';
 
+    const isCleanWhitelistName =
+      Boolean(whitelist.fullName) &&
+      !whitelist.fullName!.includes('|') &&
+      !/^\d{5,}-/.test(whitelist.fullName!);
+
+    const resolvedFullName =
+      (parsed.fullName && !parsed.fullName.includes('|'))
+        ? parsed.fullName
+        : (isCleanWhitelistName ? whitelist.fullName! : (parsed.fullName || whitelist.fullName || email.split('@')[0]));
+
     return NextResponse.json({
       authenticated: true,
       session: {
         email,
-        fullName: parsed.fullName || whitelist.fullName || email.split('@')[0],
+        fullName: resolvedFullName,
         role,
         isAdmin: isSuperAdmin || role === 'admin',
       },
@@ -71,9 +81,19 @@ export async function POST(request: NextRequest) {
     }
 
     const role = isSuperAdmin ? 'admin' : whitelist.role || 'participant';
+    const isCleanWhitelistName =
+      Boolean(whitelist.fullName) &&
+      !whitelist.fullName!.includes('|') &&
+      !/^\d{5,}-/.test(whitelist.fullName!);
+
+    const resolvedFullName =
+      (fullName && !fullName.includes('|'))
+        ? fullName
+        : (isCleanWhitelistName ? whitelist.fullName! : (fullName || whitelist.fullName || email.split('@')[0]));
+
     const sessionData = {
       email,
-      fullName: fullName || whitelist.fullName || email.split('@')[0],
+      fullName: resolvedFullName,
       role,
       isAdmin: isSuperAdmin || role === 'admin',
     };

@@ -278,7 +278,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 3. Verify caller is team leader, admin, the member removing themselves, or an accepted teammate removing an unaccepted pending invite
+    // 3. Verify caller is team leader, admin, or the member leaving themselves
     const { data: callerEntry } = await supabase
       .from('team_members')
       .select('role, status')
@@ -290,12 +290,10 @@ export async function DELETE(request: NextRequest) {
     const isLeader = callerEntry?.role === 'leader';
     const isAdmin = Boolean(session.isAdmin);
     const isSelf = targetMember.email.toLowerCase() === session.email.toLowerCase();
-    const isPendingInvite = targetMember.status === 'invited';
-    const isAcceptedMember = callerEntry?.status === 'accepted' || isLeader;
 
-    if (!isLeader && !isAdmin && !isSelf && !(isPendingInvite && isAcceptedMember)) {
+    if (!isLeader && !isAdmin && !isSelf) {
       return NextResponse.json(
-        { error: 'Only team leaders, admins, or teammates managing pending invites can remove members.' },
+        { error: 'Only the team leader or admin can remove teammates, or members can leave the team themselves.' },
         { status: 403 }
       );
     }

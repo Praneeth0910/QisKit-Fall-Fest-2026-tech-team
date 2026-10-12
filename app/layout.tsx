@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from 'next';
 import { ThemeProvider } from '@/components/shared/ThemeProvider';
 import { Navbar } from '@/components/shared/Navbar';
 import { LoadScreen } from '@/components/shared/LoadScreen';
-import { CustomCursor } from '@/components/shared/CustomCursor';
 import { SmoothScrollProvider } from '@/components/shared/SmoothScrollProvider';
 import { JsonLd } from '@/components/shared/JsonLd';
 import {
@@ -117,7 +116,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <SmoothScrollProvider>
             <AnalyticsProvider />
             <OAuthRedirectHandler />
-            <CustomCursor />
             <LoadScreen />
             <DeadlineToast />
             <Navbar />

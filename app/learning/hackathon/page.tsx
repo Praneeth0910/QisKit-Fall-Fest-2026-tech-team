@@ -23,6 +23,8 @@ import {
   ArrowLeft,
   Lock,
   Edit3,
+  Pencil,
+  LogOut,
   X,
   Check,
   UserPlus,
@@ -145,6 +147,13 @@ export default function HackathonWorkspacePage() {
   const [copiedInviteEmail, setCopiedInviteEmail] = useState<string | null>(null);
   const [respondingInviteId, setRespondingInviteId] = useState<string | null>(null);
   const [respondingInviteErr, setRespondingInviteErr] = useState<string>('');
+
+  // Edit Name Modal State
+  const [isEditNameModalOpen, setIsEditNameModalOpen] = useState(false);
+  const [editNameInput, setEditNameInput] = useState('');
+  const [isSavingName, setIsSavingName] = useState(false);
+  const [editNameError, setEditNameError] = useState('');
+  const [editNameSuccess, setEditNameSuccess] = useState('');
 
   function getInviteShareMessage(teammateEmail?: string) {
     const teamNameStr = team?.name ? `"${team.name}"` : 'our team';
@@ -540,6 +549,114 @@ export default function HackathonWorkspacePage() {
       setMemberActionErr(err?.message || 'Error removing member.');
     } finally {
       setRemovingMemberId(null);
+    }
+  }
+
+  // Active Team: Teammate voluntarily leaves team
+  async function handleLeaveTeam(memberId: string, memberEmail: string) {
+    if (!team?.id) return;
+    const confirmLeave = window.confirm(
+      'Are you sure you want to leave this team? You will need a new invitation to join again.'
+    );
+    if (!confirmLeave) return;
+
+    setRemovingMemberId(memberId);
+    setMemberActionMsg('');
+    setMemberActionErr('');
+
+    try {
+      const res = await fetch(`/api/hackathon/team/member?teamId=${team.id}&memberId=${memberId}`, {
+        method: 'DELETE',
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setMemberActionErr(data.error || 'Failed to leave team.');
+        return;
+      }
+
+      setMemberActionMsg('You have successfully left the team.');
+      await fetchTeamData();
+    } catch (err: any) {
+      setMemberActionErr(err?.message || 'Error leaving team.');
+    } finally {
+      setRemovingMemberId(null);
+    }
+  }
+
+  function getCleanNameSuggestion(name: string): string {
+    return name
+      .replace(/\s*\|\s*AP\d+/i, '')
+      .replace(/\s*\|\s*[A-Z0-9_-]+/i, '')
+      .trim();
+  }
+
+  // Profile: Open modal to edit official full name
+  function handleOpenEditNameModal(initialName: string) {
+    const current = initialName || sessionUser?.fullName || '';
+    setEditNameInput(current);
+    setEditNameError('');
+    setEditNameSuccess('');
+    setIsEditNameModalOpen(true);
+  }
+
+  // Profile: Submit updated full name
+  async function handleSaveName(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = editNameInput.trim().replace(/\s+/g, ' ');
+    if (trimmed.length < 2) {
+      setEditNameError('Please enter a valid full name (at least 2 characters).');
+      return;
+    }
+
+    setIsSavingName(true);
+    setEditNameError('');
+    setEditNameSuccess('');
+
+    try {
+      // 1. Update Supabase Auth user metadata
+      try {
+        await supabase.auth.updateUser({
+          data: { full_name: trimmed, name: trimmed },
+        });
+      } catch (authErr) {
+        console.warn('Notice updating auth metadata:', authErr);
+      }
+
+      // 2. Call backend profile API
+      const res = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName: trimmed }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to update full name.');
+      }
+
+      // 3. Update client-side session state & dispatch global event
+      if (sessionUser) {
+        const updated = { ...sessionUser, fullName: trimmed };
+        setSessionUser(updated);
+        if (typeof window !== 'undefined') {
+          const { invalidateClientSessionCache } = await import('@/lib/session-client');
+          invalidateClientSessionCache();
+          window.dispatchEvent(new CustomEvent('qff_auth_change', { detail: updated }));
+        }
+      }
+
+      // 4. Refresh team data to immediately reflect in roster
+      await fetchTeamData();
+
+      setEditNameSuccess('Full name updated successfully.');
+      setTimeout(() => {
+        setIsEditNameModalOpen(false);
+      }, 700);
+    } catch (err: any) {
+      setEditNameError(err?.message || 'Error updating name.');
+    } finally {
+      setIsSavingName(false);
     }
   }
 
@@ -1291,32 +1408,58 @@ export default function HackathonWorkspacePage() {
                       const isLeader = m.role === 'leader';
                       const isPending = m.status === 'invited';
                       const isLeaderOrAdmin = team.currentUserRole === 'leader' || Boolean(sessionUser?.isAdmin);
-                      const canRemove =
-                        !isFinalized &&
-                        !isLeader &&
-                        (isLeaderOrAdmin ||
-                          isPending ||
-                          m.email?.toLowerCase() === sessionUser?.email?.toLowerCase());
+                      const isCurrentUser = m.email?.trim().toLowerCase() === sessionUser?.email?.trim().toLowerCase();
+
+                      // Only team leaders or admins can remove teammates or cancel pending invites.
+                      // Non-leader accepted teammates can only leave the team themselves.
+                      const canLeaderRemove = !isFinalized && isLeaderOrAdmin && !isLeader && !isCurrentUser;
+                      const canMemberLeave = !isFinalized && !isLeaderOrAdmin && isCurrentUser && !isLeader;
 
                       return (
                         <div
                           key={m.id}
-                          className="p-3.5 rounded-xl border border-slate-200 dark:border-[#3D1418] bg-slate-50 dark:bg-[#1C0A0D] text-xs space-y-2 flex flex-col justify-between"
+                          className={`p-3.5 rounded-xl border text-xs space-y-2 flex flex-col justify-between transition-all ${
+                            isCurrentUser
+                              ? 'border-burgundy/40 dark:border-burgundy/60 bg-burgundy/[0.03] dark:bg-[#200A0E] ring-1 ring-burgundy/25 shadow-xs'
+                              : 'border-slate-200 dark:border-[#3D1418] bg-slate-50 dark:bg-[#1C0A0D]'
+                          }`}
                         >
                           <div className="space-y-1.5">
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="font-bold text-slate-900 dark:text-[#FAF6F3] truncate text-sm">
-                                {m.full_name || (m.email || '').split('@')[0]}
-                              </span>
-                              <span
-                                className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${
-                                  isLeader
-                                    ? 'bg-burgundy/15 text-burgundy dark:bg-burgundy/25 dark:text-[#E89BA5]'
-                                    : 'bg-slate-200 dark:bg-[#250D11] text-slate-700 dark:text-slate-300'
-                                }`}
-                              >
-                                {m.role}
-                              </span>
+                            <div className="flex items-start justify-between gap-1.5">
+                              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                <span
+                                  className="font-bold text-slate-900 dark:text-[#FAF6F3] truncate text-sm"
+                                  title={m.full_name || (m.email || '').split('@')[0]}
+                                >
+                                  {m.full_name || (m.email || '').split('@')[0]}
+                                </span>
+                                {isCurrentUser && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenEditNameModal(m.full_name || sessionUser?.fullName || '')}
+                                    title="Edit your official name for roster & certificates"
+                                    className="p-1 rounded text-slate-400 hover:text-burgundy dark:hover:text-[#E89BA5] hover:bg-white dark:hover:bg-[#2A0D12] transition-colors cursor-pointer shrink-0"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <span
+                                  className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${
+                                    isLeader
+                                      ? 'bg-burgundy/15 text-burgundy dark:bg-burgundy/25 dark:text-[#E89BA5]'
+                                      : 'bg-slate-200 dark:bg-[#250D11] text-slate-700 dark:text-slate-300'
+                                  }`}
+                                >
+                                  {m.role}
+                                </span>
+                                {isCurrentUser && (
+                                  <span className="px-1.5 py-0.5 rounded text-[9.5px] font-bold uppercase tracking-wider bg-burgundy text-white shadow-2xs">
+                                    You
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             <span className="text-slate-500 dark:text-slate-400 truncate block font-mono text-[11px]">
                               {m.email}
@@ -1340,7 +1483,7 @@ export default function HackathonWorkspacePage() {
                                       <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
                                       <span>Pending Acceptance</span>
                                     </span>
-                                    {!isFinalized && (isLeaderOrAdmin || team.currentUserStatus === 'accepted') && (
+                                    {!isFinalized && isLeaderOrAdmin && (
                                       <button
                                         type="button"
                                         onClick={() => handleResendInvite(m.id, m.email)}
@@ -1387,7 +1530,7 @@ export default function HackathonWorkspacePage() {
                               ) : (
                                 <div className="flex items-center gap-1.5">
                                   <span className="text-[11px] text-rose-600 dark:text-rose-400 font-semibold">Declined</span>
-                                  {!isFinalized && (isLeaderOrAdmin || team.currentUserStatus === 'accepted') && (
+                                  {!isFinalized && isLeaderOrAdmin && (
                                     <button
                                       type="button"
                                       onClick={() => handleResendInvite(m.id, m.email)}
@@ -1401,17 +1544,31 @@ export default function HackathonWorkspacePage() {
                               )}
                             </div>
 
-                            {/* Remove / Cancel Invite button */}
-                            {canRemove && (
+                            {/* Leader Remove or Cancel Invite button */}
+                            {canLeaderRemove && (
                               <button
                                 type="button"
                                 onClick={() => handleRemoveMember(m.id, m.email)}
                                 disabled={removingMemberId === m.id}
-                                title={isPending ? 'Cancel in-portal invitation' : 'Remove from team'}
+                                title={isPending ? 'Cancel in-portal invitation' : 'Remove teammate from team'}
                                 className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded text-[10.5px] font-semibold text-rose-600 hover:text-rose-800 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
-                                <span>{removingMemberId === m.id ? 'Removing...' : isPending ? 'Cancel' : 'Remove'}</span>
+                                <span>{removingMemberId === m.id ? 'Processing...' : isPending ? 'Cancel' : 'Remove'}</span>
+                              </button>
+                            )}
+
+                            {/* Teammate Leave Team button */}
+                            {canMemberLeave && (
+                              <button
+                                type="button"
+                                onClick={() => handleLeaveTeam(m.id, m.email)}
+                                disabled={removingMemberId === m.id}
+                                title="Leave this team"
+                                className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded text-[10.5px] font-semibold text-amber-700 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 cursor-pointer transition-colors"
+                              >
+                                <LogOut className="w-3.5 h-3.5" />
+                                <span>{removingMemberId === m.id ? 'Leaving...' : 'Leave Team'}</span>
                               </button>
                             )}
                           </div>
@@ -1853,7 +2010,10 @@ export default function HackathonWorkspacePage() {
                 Are you sure you want to finalize <strong>{team?.name}</strong>?
               </p>
               <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs space-y-1.5">
-                <span className="font-bold block">⚠️ Important: This action cannot be undone.</span>
+                <span className="font-bold flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 shrink-0" />
+                  Important: This action cannot be undone.
+                </span>
                 <ul className="list-disc list-inside space-y-1 text-amber-800 dark:text-amber-300">
                   <li>Your team roster will be <strong>permanently locked</strong>.</li>
                   <li>You will <strong>not</strong> be able to add, delete, or change teammates anymore.</li>
@@ -1895,6 +2055,103 @@ export default function HackathonWorkspacePage() {
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Full Name Modal */}
+        {isEditNameModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+            <div className="bg-white dark:bg-[#150709] border border-slate-200 dark:border-[#3D1418] rounded-xl max-w-md w-full p-6 space-y-4 shadow-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-burgundy dark:text-[#E89BA5]">
+                  <Pencil className="w-5 h-5" />
+                  <h3 className="font-bold text-base text-slate-900 dark:text-[#FAF6F3]">Edit Official Full Name</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsEditNameModalOpen(false)}
+                  disabled={isSavingName}
+                  className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Update your name as it should appear on your Hackathon roster, leaderboards, and official co-certified completion credentials.
+              </p>
+
+              <form onSubmit={handleSaveName} className="space-y-3.5">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    Full Name (Candidate Name)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editNameInput}
+                    onChange={(e) => setEditNameInput(e.target.value)}
+                    placeholder="e.g. Naga Sasidhar Reddy Munnam"
+                    disabled={isSavingName}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#1C0A0D] border border-slate-300 dark:border-[#3D1418] rounded-lg text-xs text-slate-900 dark:text-[#FAF6F3] font-medium focus:outline-hidden focus:ring-1 focus:ring-burgundy"
+                  />
+                  {editNameInput.includes('|') && (
+                    <button
+                      type="button"
+                      onClick={() => setEditNameInput(getCleanNameSuggestion(editNameInput))}
+                      className="text-[11px] text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-2 py-1 rounded-md text-left flex items-center justify-between w-full hover:bg-amber-100 transition-colors cursor-pointer"
+                    >
+                      <span>Detected campus roll number in name.</span>
+                      <span className="font-semibold underline ml-1">Use Clean: &ldquo;{getCleanNameSuggestion(editNameInput)}&rdquo;</span>
+                    </button>
+                  )}
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Account email: <span className="font-mono">{sessionUser?.email}</span>
+                  </p>
+                </div>
+
+                {editNameError && (
+                  <div className="p-2.5 rounded bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-800 dark:text-rose-300 text-xs">
+                    {editNameError}
+                  </div>
+                )}
+
+                {editNameSuccess && (
+                  <div className="p-2.5 rounded bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-1.5 font-medium">
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{editNameSuccess}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-[#3D1418]">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditNameModalOpen(false)}
+                    disabled={isSavingName}
+                    className="px-4 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-[#3D1418] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#200B0E] cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingName}
+                    className="px-4 py-2 text-xs font-bold rounded-lg bg-burgundy hover:bg-burgundy-deep text-white flex items-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
+                  >
+                    {isSavingName ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Saving Name...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Save Name</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
