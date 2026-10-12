@@ -10,7 +10,7 @@ import {
 import { getLocalTestSession, isLocalTestAuthEnabled } from '../../../../lib/local-test-auth.ts';
 import { supabase } from '../../../../lib/supabase.ts';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   if (
