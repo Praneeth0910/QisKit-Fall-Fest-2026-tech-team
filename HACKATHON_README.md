@@ -40,7 +40,7 @@ This document serves as the master specification containing every track, all 20 
 | **Finals** | Pitch & Demonstrations| In-Person | Main Stage Auditorium | 28 Oct 2026 (Evening) | Jury presentations & award distribution |
 
 ### Team Composition Rules
-- **Team Size:** 1 to 6 members during Phase 1 team formation (1 Leader + up to 5 Teammates).
+- **Team Size:** 2 to 6 members during Phase 1 team formation (1 Leader + 1 to 5 Teammates).
 - **Onsite Finalist Rule:** 2 to 4 members per team for Phase 2 onsite finals.
 - **Whitelist Enforcement:** Every teammate's email must be registered on the official portal whitelist.
 - **Exclusivity:** A participant can belong to only one team across the entire festival. Once an invitation is accepted, the participant cannot create or join any other team.

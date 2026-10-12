@@ -373,7 +373,7 @@ export default function FAQsPageContent() {
                 custom={0.15}
                 variants={fadeInUpVariant}
               >
-                Explore General Event Rules, Registration &amp; Venue Details, along with complete Technical Hackathon guidelines across all 5 tracks: Quantum Chemistry, Optimization, Simulation, QML, and Post-Quantum Cryptography.
+                Explore General Event Rules, Registration &amp; Venue Details, along with complete Technical Hackathon guidelines across all 5 tracks: Quantum Chemistry, Optimization, Simulation, QML, and Post-Quantum Cryptography. All festival events are 100% free to attend, with an optional ₹99 fee for certified credentials.
               </motion.p>
 
               {/* Quick Jump Directory Cards (First Page Card Structure & Sizing) */}
@@ -1025,6 +1025,30 @@ export default function FAQsPageContent() {
                                       #{tag}
                                     </button>
                                   ))}
+                                </div>
+                              )}
+
+                              {/* Specialized UI Card for Optional Certificate Fee (faq-17) */}
+                              {item.id === 'faq-17' && (
+                                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-[#6C151E]/10 via-[#3A0B10]/5 to-transparent dark:from-[#240D10] dark:to-[#180C0E] border border-[#6C151E]/30 dark:border-[#3D1418] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+                                  <div>
+                                    <div className="text-xs font-sans font-bold uppercase tracking-wider text-[#6C151E] dark:text-[#F0A2B0]">
+                                      Optional Verified Certificate Fee
+                                    </div>
+                                    <div className="text-xl sm:text-2xl font-serif font-bold text-[#3A0B10] dark:text-white mt-0.5">
+                                      ₹99 (Certificate Only)
+                                    </div>
+                                    <p className="text-xs sm:text-sm text-[#16171B]/80 dark:text-[#C4B9B8] mt-1 leading-relaxed">
+                                      Event registration and access to all online and offline sessions are 100% free. The ₹99 nominal fee applies only if requesting an official, cryptographically verified certificate upon completion.
+                                    </p>
+                                  </div>
+                                  <Link
+                                    href="/learning"
+                                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-sans font-bold bg-[#6C151E] text-white hover:bg-[#8A1B27] dark:bg-[#F0A2B0] dark:text-[#14080A] dark:hover:bg-[#F7B5C1] transition-all shadow-md shrink-0 cursor-pointer"
+                                  >
+                                    <span>Learning Portal</span>
+                                    <ArrowRight size={15} />
+                                  </Link>
                                 </div>
                               )}
 

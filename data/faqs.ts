@@ -252,13 +252,13 @@ export const GENERAL_FAQS: FAQItem[] = [
   {
     id: 'faq-17',
     number: 17,
-    question: 'What is the registration fee?',
+    question: 'Is there any registration or certificate fee?',
     answer:
-      'The registration fee for Qiskit Fall Fest 2026 is ₹99 per participant, paid during initial sign-up on Unstop.',
+      'Participation across all Qiskit Fall Fest 2026 events, webinars, competitions, and the hackathon is 100% free.\n\nThere is an optional \u20b999 processing fee only if you wish to receive an official, cryptographically verified certificate of completion after completing the masterclasses and passing the quizzes.',
     category: 'Registration & Fees',
     section: 'general',
     isTopQuestion: true,
-    tags: ['Fee', '₹99', 'Registration'],
+    tags: ['Fee', '₹99', 'Certificate', 'Registration', 'Free'],
   },
   {
     id: 'faq-18',
