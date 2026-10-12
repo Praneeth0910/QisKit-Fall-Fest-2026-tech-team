@@ -39,4 +39,24 @@ This file is automatically loaded by AI agents working in this workspace.
 - **Zero Decorative Emojis** in UI buttons, status badges, headers, or git commits.
 - **Clean light-theme default** (`#ffffff` / `#f8fafc`, `#e2e8f0` borders, `#0f172a` text).
 - **Concise, direct tone** without AI cheerleading or filler words.
-- Consult `PROJECT_LEARNINGS.md` for complete ground truths (GT-01 through GT-21).
+- Consult `PROJECT_LEARNINGS.md` for complete ground truths (GT-01 through GT-22).
+
+---
+
+## 4. Active Deadlines & Don Norman UX Standards (Source of Truth)
+
+1. **Active Online Deadlines:**
+   - **Creative Competitions (Day 1 Tech Reels, Day 2 Digital Poster, Day 3 Technical Essay):** Officially extended to **Wednesday, 14 October 2026, 11:59 PM IST**.
+   - **Hackathon Phase 1 Online Window:** Submissions close **14 October 2026, 11:59 PM IST**.
+   - **Qiskit Coding Challenges (P1 to P9):** Browser challenges open until **15 October 2026**.
+
+2. **Don Norman Communication Architecture (MANDATORY):**
+   - **Never rely solely on ephemeral toasts** for environmental constraints or deadlines. A toast provides brief entrance feedback, but persistent environmental visibility ("knowledge in the world") is required.
+   - When communicating deadline status or temporal changes, maintain:
+     - Persistent in-page dashboard banners (`DeadlineExtensionBanner.tsx`).
+     - Point-of-action visual signifiers (`~~12 Oct~~ → 14 Oct (Extended)`) on submission cards and guidelines.
+     - Synchronized sidebar status badges (`14 Oct`).
+     - Contextual alert badges on the Public Schedule (`ExploreSchedule.tsx`).
+     - Global non-intrusive entrance toasts (`DeadlineToast.tsx`) with localStorage dismissal.
+   - Single source of truth must remain 100% synchronized across all schedule, FAQ, curriculum, and competition data files.
+

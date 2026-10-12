@@ -11,5 +11,5 @@ All future prompts, email drafts, marketing assets, and instructions referencing
 
 ## Architecture & Governance
 Refer to:
-- `PROJECT_LEARNINGS.md` for confirmed ground truths (GT-01 to GT-21) and architecture.
-- `AGENTS.md` for AI agent operational standards.
+- `PROJECT_LEARNINGS.md` for confirmed ground truths (GT-01 to GT-22) and architecture.
+- `AGENTS.md` for AI agent operational standards and active deadline extensions.
